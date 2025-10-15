@@ -1,23 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/app_constants.dart';
-import '../../models/product.dart'; // <--- This file contains the authoritative ProductCategory definition
+import '../../models/product.dart';
 import '../../services/order_service.dart';
 import '../../widgets/product_card.dart';
 import '../../utils/snackbar_helper.dart';
 import '../cart/cart_screen.dart';
 import 'product_detail_screen.dart';
-
-// Assuming the following enums and types are correctly imported from product.dart
-// They are used here for type reference.
-// enum WheelchairType { manual, electric, sports }
-// enum MobilityScooterType { 3wheel, 4wheel, heavyDuty }
-// enum DailyLivingAidType { bathing, dressing, eating }
-// enum HomeHealthCareType { oxygen, monitoring, therapy }
-
-// =========================================================================
-// PRODUCT CATALOG SCREEN CLASS
-// =========================================================================
 
 class ProductCatalogScreen extends StatefulWidget {
   const ProductCatalogScreen({super.key});
@@ -29,50 +18,39 @@ class ProductCatalogScreen extends StatefulWidget {
 class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   final OrderService _orderService = OrderService();
 
-  // Responsive Breakpoint
   static const double _kTabletBreakpoint = 800.0;
 
-  // State variables using the enums defined in the model file
   ProductCategory? _selectedCategory;
   dynamic _selectedSubType;
 
-  // State for Search Query
   String _searchQuery = '';
 
-  // FIX 1: Declare a persistent controller
   late final TextEditingController _searchController;
 
-  // 1. ADD BREADCRUMB STATE
   List<String> _breadcrumbPath = ['Home'];
 
-  // FIX 2: Initialize and Dispose Controller
   @override
   void initState() {
     super.initState();
-    // Initialize the controller only once.
+
     _searchController = TextEditingController(text: _searchQuery);
   }
 
   @override
   void dispose() {
-    // Dispose of the controller when the widget is removed.
     _searchController.dispose();
     super.dispose();
   }
-  // END FIX 2
 
   List<Product> get _filteredProducts {
-    // Start with all products or category-filtered products
     var products = _selectedCategory == null
         ? AppConstants.productCatalog
         : AppConstants.getProductsByCategory(_selectedCategory!);
 
-    // 1. SUBTYPE FILTER
     if (_selectedSubType != null) {
       products = products.where((p) => p.subType == _selectedSubType).toList();
     }
 
-    // 2. SEARCH FILTER (Uses the state variable)
     if (_searchQuery.isNotEmpty) {
       final lowerCaseQuery = _searchQuery.toLowerCase();
       products = products.where((product) {
@@ -202,8 +180,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       // Index 2 (SubType) is handled via the subcategory filter button logic
     });
   }
-
-  
 
   // 3. NEW BREADCRUMB WIDGET
   Widget _buildBreadcrumb() {
@@ -695,14 +671,114 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     );
   }
 
+  // NOTE: This code assumes you have defined the necessary enums (ProductCategory)
+  // and classes (Product, AppConstants).
+
+  // Import necessary packages (e.g., flutter/material.dart, flutter_svg.dart)
+
+  // --- START: Helper Widget for Sidebar Tiles ---
+
+  Widget _buildCategoryTile({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required int count,
+    required VoidCallback onTap,
+  }) {
+    // Define the selection style: rounded background with a slight shadow.
+    final Color primaryColor = const Color.fromARGB(255, 71, 3, 88);
+    final Color backgroundColor = isSelected
+        ? primaryColor
+        : Colors.transparent;
+    final Color labelColor = isSelected ? Colors.white : Colors.grey.shade800;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          // Adding slight elevation and rounded corners for the selected state
+          decoration: BoxDecoration(
+            color: isSelected ? primaryColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            // Add a subtle shadow when selected
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withOpacity(0.2)
+                      : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Icon(
+                    icon, // Using the standard icon as a fallback/placeholder
+                    color: isSelected ? Colors.white : primaryColor,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // 2. LABEL TEXT
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: labelColor,
+                      ),
+                    ),
+                    if (!isSelected) // Show count only if not selected
+                      Text(
+                        '$count items',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSidebar() {
+    // Use the same primary color for the sidebar background color
+    final Color primaryColor = const Color.fromARGB(255, 71, 3, 88);
+
     return Container(
       width: 280, // Fixed width for large screens
-      color: Colors.grey.shade50,
+      // Change background to white or a lighter tone for better contrast with the tiles
+      color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo Area
+          // Logo Area (Kept as is, using white background)
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -711,52 +787,46 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 bottom: BorderSide(color: Colors.grey.shade200, width: 1),
               ),
             ),
-            child: Row(
-              children: [
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: 200,
-                      maxHeight: 20,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: SvgPicture.asset(
-                        'assets/images/medihub-logo.svg',
-                        width: double.infinity,
-                        fit: BoxFit.contain,
-                        colorFilter: const ColorFilter.mode(
-                          Colors.black,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: Row(children: [
+             
+            ],
+          ),
           ),
 
           // Category List
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              // Removed vertical padding here since it's now in the tile
+              padding: const EdgeInsets.symmetric(vertical: 0),
               children: [
+                // All Products Tile
                 _buildCategoryTile(
                   label: 'All Products',
                   icon: Icons.grid_view,
                   isSelected: _selectedCategory == null,
                   count: AppConstants.productCatalog.length,
                   onTap: () {
-                    // Use new update function
                     _updateBreadcrumbPath(category: null, subType: null);
                   },
                 ),
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Divider(),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 8,
+                  ), // Increased horizontal padding
+                  child: Divider(
+                    height: 1,
+                    color: Color.fromARGB(
+                      255,
+                      230,
+                      230,
+                      230,
+                    ), // Lighter divider
+                  ),
                 ),
+                // Dynamic Category Tiles
                 ...ProductCategory.values.map((category) {
+                  // ... (Your existing logic for calculating count and creating tempProduct)
                   final count = AppConstants.getProductsByCategory(
                     category,
                   ).length;
@@ -770,9 +840,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                     imageUrl: '',
                     features: [],
                     stockQuantity: 0,
-                    color: Colors.grey,
+                    color: primaryColor,
                     colorName: '',
                   );
+                  // ...
 
                   return _buildCategoryTile(
                     label: tempProduct.categoryDisplayName,
@@ -782,7 +853,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                         _selectedSubType == null,
                     count: count,
                     onTap: () {
-                      // Use new update function
                       _updateBreadcrumbPath(category: category, subType: null);
                     },
                   );
@@ -791,10 +861,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             ),
           ),
 
-          // Support Info (REFINED SECTION)
+          // Support Info (Refined for the bottom edge)
           Container(
-            // Using horizontal and vertical padding for better centering than the previous 'only(right: 64)'
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(
@@ -802,14 +871,12 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               ),
             ),
             child: Column(
-              // Stretch to container width to make centering effective
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Icon(
                   Icons.contact_support_outlined,
-                  // Using the main theme color for emphasis
-                  color: const Color.fromARGB(255, 71, 3, 88),
-                  size: 32, // Larger icon
+                  color: primaryColor, // Consistent primary color
+                  size: 32,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -822,105 +889,32 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  AppConstants.supportEmail,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: const Color.fromARGB(
-                      255,
-                      71,
-                      3,
-                      88,
-                    ).withOpacity(0.8), // Link-like color
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  AppConstants.supportPhone,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                // Use a Column for tighter control over the link colors
+                Column(
+                  children: [
+                    Text(
+                      AppConstants.supportEmail,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: primaryColor.withOpacity(0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      AppConstants.supportPhone,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryTile({
-    required String label,
-    required IconData icon,
-    required bool isSelected,
-    required int count,
-    required VoidCallback onTap,
-  }) {
-    // ADJUSTED: Increased vertical padding and font size for larger tile
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 4,
-        ), // Increased vertical margin
-        padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 16,
-        ), // Increased vertical padding
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color.fromARGB(255, 71, 3, 88).withOpacity(0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? const Color.fromARGB(255, 71, 3, 88)
-                : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 28, // Slightly larger icon
-              color: isSelected
-                  ? const Color.fromARGB(255, 71, 3, 88)
-                  : Colors.grey.shade600,
-            ),
-            const SizedBox(width: 16), // Increased spacing
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16, // Increased font size
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected
-                      ? const Color.fromARGB(255, 71, 3, 88)
-                      : Colors.grey.shade700,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color.fromARGB(255, 71, 3, 88)
-                    : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 14, // Slightly larger count font
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : Colors.grey.shade700,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
