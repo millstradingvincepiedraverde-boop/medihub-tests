@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:medihub_tests/screens/kiosk-main.dart';
 import '../../constants/app_constants.dart';
 import '../../models/product.dart';
 import '../../services/order_service.dart';
@@ -21,6 +24,13 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   static const double _kTabletBreakpoint = 800.0;
 
+  static const Duration _inactivityTimeout = Duration(
+    seconds: 120,
+  ); // idle timeout
+  static const Duration _dialogAutoClose = Duration(
+    seconds: 30,
+  ); // auto-redirect delay
+
   ProductCategory? _selectedCategory;
   dynamic _selectedSubType;
 
@@ -30,17 +40,170 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   List<String> _breadcrumbPath = ['Home'];
 
+  Timer? _inactivityTimer;
+  Timer? _dialogTimer; // to auto close dialog
+
   @override
   void initState() {
     super.initState();
-
     _searchController = TextEditingController(text: _searchQuery);
+    _startInactivityTimer();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _cancelInactivityTimer();
+    _dialogTimer?.cancel();
     super.dispose();
+  }
+
+  // 🕒 TIMER LOGIC
+  void _startInactivityTimer() {
+    _cancelInactivityTimer();
+    _inactivityTimer = Timer(_inactivityTimeout, _showInactivityDialog);
+  }
+
+  void _cancelInactivityTimer() {
+    _inactivityTimer?.cancel();
+  }
+
+  void _resetInactivityTimer() {
+    _startInactivityTimer();
+  }
+
+  void _onUserInteraction([_]) {
+    _resetInactivityTimer();
+  }
+
+  // 🟣 SHOW "Are you still there?" DIALOG
+  void _showInactivityDialog() {
+    if (!mounted) return;
+
+    int countdown = 30; // number of seconds before returning
+    _dialogTimer?.cancel();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54, // dimmed background
+      builder: (context) {
+        // Countdown timer
+        _dialogTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          if (!mounted) return;
+          if (countdown <= 1) {
+            timer.cancel();
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+            _navigateToKiosk();
+          } else {
+            setState(() => countdown--);
+          }
+        });
+
+        return StatefulBuilder(
+          builder: (context, setState) => Center(
+            child: Container(
+              width: 420,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // Close (X) button
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.black54),
+                      onPressed: () {
+                        _dialogTimer?.cancel();
+                        Navigator.of(context).pop();
+                        _resetInactivityTimer();
+                      },
+                    ),
+                  ),
+
+                  // Main content
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 16),
+                      const Text(
+                        "We’ve noticed an inactivity",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Closing this session in $countdown seconds...",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _dialogTimer?.cancel();
+                            Navigator.of(context).pop();
+                            _resetInactivityTimer();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4A306D),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            "Extend session",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _navigateToKiosk() {
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const KioskMain()),
+      (route) => false,
+    );
   }
 
   List<Product> get _filteredProducts {
@@ -711,10 +874,11 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 Expanded(child: _buildMainProductArea(screenWidth)),
               ],
             ),
-            bottomNavigationBar: BottomCartButton(
-                key: ValueKey(_orderService.cartItemCount), // Forces rebuild when count changes
-
-            ),
+      bottomNavigationBar: BottomCartButton(
+        key: ValueKey(
+          _orderService.cartItemCount,
+        ), // Forces rebuild when count changes
+      ),
     );
   }
   // --- Widget Builders ---

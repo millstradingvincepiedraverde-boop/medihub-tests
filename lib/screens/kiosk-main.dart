@@ -1,9 +1,40 @@
-// ignore: file_names
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:medihub_tests/screens/admin/admin_dashboard_screen.dart';
 import 'catalog/product_catalog_screen.dart';
 
+// --- Slide Model ---
+class SlideData {
+  final String imageUrl;
+  final String title;
+  final String subtitle;
+  final String promoText;
+
+  SlideData({
+    required this.imageUrl,
+    required this.title,
+    required this.subtitle,
+    required this.promoText,
+  });
+}
+
+// --- Slides ---
+final List<SlideData> slides = [
+  SlideData(
+    imageUrl:
+        'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/HECWLCEQB2BL.png?v=1755583451',
+    title: 'Wheelchairs',
+    subtitle: 'We offer wide range of styles and sizes.',
+    promoText: 'Delivered Today',
+  ),
+  SlideData(
+    imageUrl:
+        'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/AGCMSCEMQA2BL.png?v=1755583451',
+    title: 'Mobility Scooters',
+    subtitle: 'We offer wide range of styles and sizes.',
+    promoText: 'Delivered Today',
+  ),
+];
 
 class KioskMain extends StatefulWidget {
   const KioskMain({super.key});
@@ -12,137 +43,251 @@ class KioskMain extends StatefulWidget {
   State<KioskMain> createState() => _KioskMainState();
 }
 
-class _KioskMainState extends State<KioskMain> {
-  // State variable to manage the loading status of the page
-  bool _isLoading = false;
+class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
+  bool _isCollapsed = false;
+  int _currentSlideIndex = 0;
+  Timer? _slideTimer;
+  late AnimationController _timelineController;
 
-  void _navigateToCatalog() async {
-    // 1. Set loading state to true to show the full-page overlay
-    setState(() {
-      _isLoading = true;
+  final Duration _slideDuration = const Duration(seconds: 6);
+  final Duration _animationDuration = const Duration(milliseconds: 700);
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (slides.isEmpty) return;
+
+    _timelineController = AnimationController(
+      vsync: this,
+      duration: _slideDuration,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _startSlideshow();
     });
+  }
 
-    // 2. Simulate data fetching or preparation time (increased for better visibility of the loading screen)
-    await Future.delayed(const Duration(milliseconds: 1500));
+  @override
+  void dispose() {
+    _slideTimer?.cancel();
+    _timelineController.dispose();
+    super.dispose();
+  }
 
-    // 3. Navigate to the catalog screen
-    if (mounted) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const ProductCatalogScreen(),
-        ),
-      );
-    }
-    
-    // 4. Once navigation completes (e.g., user presses back), reset loading state
-    if (mounted) {
+  // --- Slide Logic ---
+  void _startSlideshow() {
+    if (!mounted || slides.isEmpty) return;
+
+    _timelineController.forward(from: 0.0);
+    _slideTimer?.cancel();
+
+    _slideTimer = Timer(_slideDuration, () {
+      if (!mounted || slides.isEmpty) return;
       setState(() {
-        _isLoading = false;
+        _currentSlideIndex =
+            (_currentSlideIndex + 1) % slides.length; // Safe cycling
       });
+      _startSlideshow();
+    });
+  }
+
+  void _toggleKiosk() async {
+    if (_isCollapsed) return;
+
+    _slideTimer?.cancel();
+    _timelineController.stop();
+
+    setState(() => _isCollapsed = true);
+    await Future.delayed(_animationDuration);
+
+    if (mounted) _navigateToCatalog();
+  }
+
+  Future<void> _navigateToCatalog() async {
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const ProductCatalogScreen()),
+    );
+
+    if (mounted) {
+      setState(() => _isCollapsed = false);
     }
   }
 
+  // --- UI ---
+  Widget _buildSlideshow(Size size) {
+    if (slides.isEmpty || _currentSlideIndex >= slides.length) {
+      return const Center(child: Text('No slides available'));
+    }
+
+    final slide = slides[_currentSlideIndex];
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned.fill(child: Container(color: const Color(0xFFF5F5F5))),
+
+        // --- Text content with logo ---
+        AnimatedPositioned(
+          duration: _animationDuration,
+          curve: Curves.easeInOutCubic,
+          top: _isCollapsed ? -200 : size.height * 0.25,
+          left: size.width * 0.1,
+          child: AnimatedOpacity(
+            opacity: _isCollapsed ? 0.0 : 1.0,
+            duration: _animationDuration,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: size.width * 0.4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SvgPicture.network(
+                    'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/logo.svg?v=1755583753',
+                    height: 20,
+                    fit: BoxFit.contain,
+                    placeholderBuilder: (context) =>
+                        const CircularProgressIndicator(),
+                  ),
+                  const SizedBox(height: 20),
+
+                  Text(
+                    slide.title,
+                    style: const TextStyle(
+                      fontSize: 60,
+                      color: Color(0xFF191919),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text(
+                    slide.subtitle,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      color: Color(0xFF191919),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    color: const Color(0xFF4A306D),
+                    child: Text(
+                      slide.promoText,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // --- Product image ---
+        AnimatedPositioned(
+          duration: _animationDuration,
+          curve: Curves.easeInOutCubic,
+          right: _isCollapsed ? -size.width : size.width * 0.05,
+          top: size.height * 0.25,
+          child: AnimatedOpacity(
+            duration: _animationDuration,
+            opacity: _isCollapsed ? 0.0 : 1.0,
+            child: Image.network(
+              slide.imageUrl,
+              width: size.width * 0.4,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(Size size) {
+    return AnimatedPositioned(
+      duration: _animationDuration,
+      bottom: _isCollapsed ? -300 : 0,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 400),
+        opacity: _isCollapsed ? 0.0 : 1.0,
+        child: Container(
+          width: size.width,
+          height: 120,
+          color: const Color(0xFF191919),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.touch_app, color: Colors.white, size: 60),
+                SizedBox(width: 20),
+                Text(
+                  'Touch to order',
+                  style: TextStyle(
+                    fontSize: 42,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeline(Size size) {
+    return Positioned(
+      bottom: 120,
+      left: 0,
+      child: Container(
+        width: size.width,
+        height: 6,
+        color: const Color(0xFFE8D7F1),
+        child: AnimatedBuilder(
+          animation: _timelineController,
+          builder: (context, child) => Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              width:
+                  size.width *
+                  (_timelineController.isAnimating
+                      ? _timelineController.value
+                      : 0.0),
+              height: 6,
+              color: const Color(0xFF4A306D),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.fromARGB(255, 255, 255, 255),
-              Color.fromARGB(255, 246, 245, 247),
-            ],
-          ),
-        ),
-        // Wrapping the content in a Stack to overlay the loading animation
-        child: Stack( 
-          children: [
-            // --- Main Content Layer (Always visible, but disabled when loading) ---
-            SafeArea(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 24),
-                    // SVG Logo - centered with max width constraint
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 600, // Maximum width
-                          maxHeight: 80,  // Reduced height
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 40),
-                          child: SvgPicture.asset(
-                            'assets/images/medihub-logo.svg',
-                            width: double.infinity,
-                            fit: BoxFit.contain,
-                            colorFilter: const ColorFilter.mode(
-                              Colors.deepPurple,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      // Button is disabled when loading
-                      onPressed: _isLoading ? null : _navigateToCatalog, 
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 24,
-                        ),
-                        textStyle: const TextStyle(fontSize: 16),
-                        // Explicitly set colors for better aesthetics
-                        foregroundColor: Colors.deepPurple, 
-                        backgroundColor: Colors.white,
-                      ),
-                      // The button child is always the text, as the loading is now full-screen
-                      child: const Text('Start Shopping'), 
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AdminDashboardScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        'Admin Access',
-                        style: TextStyle(
-                          color: Colors.white, 
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    final size = MediaQuery.of(context).size;
 
-            // --- Loading Overlay Layer (Conditional Full-Screen) ---
-            if (_isLoading)
-              Container(
-                // This covers the whole screen
-                color: Colors.black54, // Semi-transparent gray background
-                child: const Center(
-                  // We only display the CircularProgressIndicator now
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    strokeWidth: 5,
-                  ),
-                ),
-              ),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: GestureDetector(
+        onTap: _toggleKiosk,
+        child: Stack(
+          children: [
+            _buildSlideshow(size),
+            _buildTimeline(size),
+            _buildFooter(size),
           ],
         ),
       ),
