@@ -1,3 +1,3 @@
-# medihub_tests
+MediHub
 
 A new Flutter project.
