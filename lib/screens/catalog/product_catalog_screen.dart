@@ -7,6 +7,7 @@ import '../../widgets/product_card.dart';
 import '../../utils/snackbar_helper.dart';
 import '../cart/cart_screen.dart';
 import 'product_detail_screen.dart';
+import '../../widgets/bottom_cart_button.dart';
 
 class ProductCatalogScreen extends StatefulWidget {
   const ProductCatalogScreen({super.key});
@@ -412,7 +413,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     );
   }
 
-  // NEW: Main Product Grid Area (now responsive)
   Widget _buildMainProductArea(double screenWidth) {
     // Determine crossAxisCount based on screen width
     int crossAxisCount;
@@ -424,6 +424,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     } else {
       crossAxisCount = 2; // Mobile view (kept 2)
     }
+
+    // Determine if we should show a narrower detail screen based on breakpoint
+    final bool isContentNarrow = screenWidth >= _kTabletBreakpoint;
 
     return Column(
       children: [
@@ -491,13 +494,84 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                     return ProductCard(
                       product: product,
                       onTap: () {
+                        // **START OF CUSTOM FULL-WIDTH BOTTOM MODAL TRANSITION**
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ProductDetailScreen(product: product),
+                          PageRouteBuilder(
+                            // Set to false so the background (catalog) remains visible
+                            opaque: false,
+                            // How long the slide transition takes
+                            transitionDuration: const Duration(
+                              milliseconds: 450,
+                            ),
+                            // The page being built (the destination screen structure)
+                            pageBuilder: (context, animation, secondaryAnimation) {
+                              // Define the slide tween (from off-screen bottom to its final position)
+                              const begin = Offset(0.0, 1.0);
+                              const end = Offset.zero;
+                              final slideTween = Tween(
+                                begin: begin,
+                                end: end,
+                              ).chain(CurveTween(curve: Curves.easeOutCubic));
+
+                              // Use a FadeTransition on the whole route to smoothly fade in the scrim background
+                              return FadeTransition(
+                                opacity: animation,
+                                child: Stack(
+                                  children: [
+                                    // 1. Dismissal Area (The Scrim)
+                                    Positioned.fill(
+                                      child: GestureDetector(
+                                        // Dismisses the route when tapping outside the modal content
+                                        onTap: () => Navigator.pop(context),
+                                        behavior: HitTestBehavior.opaque,
+                                        child: Container(
+                                          color: Colors.black.withOpacity(0.4),
+                                        ),
+                                      ),
+                                    ),
+
+                                    // 2. Sliding, Full-Width, Partial-Height Content
+                                    Align(
+                                      // CRITICAL: Align the content to the bottom
+                                      alignment: Alignment.bottomCenter,
+                                      child: SlideTransition(
+                                        position: animation.drive(slideTween),
+                                        child: FractionallySizedBox(
+                                          // CRITICAL: Ensure full width
+                                          widthFactor: 1.0,
+                                          // CRITICAL: Restrict height to 85% of the screen
+                                          heightFactor: 0.85,
+                                          child: ClipRRect(
+                                            // Apply rounding only to the top corners
+                                            borderRadius:
+                                                const BorderRadius.vertical(
+                                                  top: Radius.circular(20),
+                                                  bottom: Radius.zero,
+                                                ),
+                                            child: ProductDetailScreen(
+                                              product: product,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            // Since the animation logic is now embedded in pageBuilder,
+                            // we just return the child directly here.
+                            transitionsBuilder:
+                                (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
+                                ) => child,
                           ),
                         );
+                        // **END OF CUSTOM FULL-WIDTH BOTTOM MODAL TRANSITION**
                       },
                       onAddToCart: () {
                         setState(() {
@@ -529,35 +603,94 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
           Stack(
             alignment: Alignment.center,
             children: [
-              IconButton(
-                icon: const Icon(Icons.shopping_cart),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CartScreen()),
-                  ).then((_) => setState(() {}));
-                },
-              ),
-              if (_orderService.cartItemCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '${_orderService.cartItemCount}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
+              // IconButton(
+              //   icon: const Icon(Icons.shopping_cart),
+              //   onPressed: () {
+              //     // START OF CUSTOM HALF-SCREEN SLIDE-UP TRANSITION
+              //     Navigator.push(
+              //       context,
+              //       PageRouteBuilder(
+              //         // CRITICAL: Makes the previous screen visible underneath
+              //         opaque: false,
+              //         transitionDuration: const Duration(milliseconds: 350),
+              //         // This page builder handles placing the CartScreen content
+              //         pageBuilder: (context, animation, secondaryAnimation) {
+              //           // 1. Outer GestureDetector to catch taps on the semi-transparent area (scrim).
+              //           return GestureDetector(
+              //             onTap: () {
+              //               // Closes the route when the user taps the background/scrim area.
+              //               Navigator.pop(context);
+              //             },
+              //             child: Container(
+              //               // Add a semi-transparent black overlay (the scrim)
+              //               color: Colors.black.withOpacity(0.1),
+              //               alignment: Alignment.bottomCenter,
+              //               // 2. Inner GestureDetector to consume taps on the CartScreen content itself.
+              //               child: GestureDetector(
+              //                 onTap: () {
+              //                   // Important: Consume the tap so it doesn't bubble up and close the modal.
+              //                 },
+              //                 child: FractionallySizedBox(
+              //                   // Restrict the CartScreen height to about 55% of the screen
+              //                   heightFactor: 0.55,
+              //                   widthFactor: 1.0,
+              //                   // The CartScreen content
+              //                   child: const CartScreen(),
+              //                 ),
+              //               ),
+              //             ),
+              //           );
+              //         },
+              //         // Define the actual slide animation
+              //         transitionsBuilder:
+              //             (context, animation, secondaryAnimation, child) {
+              //           // Slide the content up from the bottom (Offset(0.0, 1.0) to Offset.zero)
+              //           const begin = Offset(0.0, 1.0);
+              //           const end = Offset.zero;
+              //           final slideTween = Tween(
+              //             begin: begin,
+              //             end: end,
+              //           ).chain(CurveTween(curve: Curves.easeOutCubic));
+
+              //           // We use a FadeTransition on the whole route to smoothly fade in the scrim background
+              //           return FadeTransition(
+              //             opacity: CurvedAnimation(
+              //               parent: animation,
+              //               curve: Curves.easeOut,
+              //             ),
+              //             // The actual content slides up
+              //             child: SlideTransition(
+              //               position: animation.drive(slideTween),
+              //               child:
+              //                   child, // The FractionallySizedBox container
+              //             ),
+              //           );
+              //         },
+              //       ),
+              //     ).then((_) => setState(() {}));
+              //     // END OF CUSTOM HALF-SCREEN SLIDE-UP TRANSITION
+              //   },
+              // ),
+              // if (_orderService.cartItemCount > 0)
+              //   Positioned(
+              //     right: 8,
+              //     top: 8,
+              //     child: Container(
+              //       padding: const EdgeInsets.all(4),
+              //       decoration: const BoxDecoration(
+              //         color: Colors.red,
+              //         shape: BoxShape.circle,
+              //       ),
+              //       child: Text(
+              //         '${_orderService.cartItemCount}',
+              //         style: const TextStyle(
+              //           color: Colors.white,
+              //           fontSize: 12,
+              //           fontWeight: FontWeight.bold,
+              //         ),
+              //       ),
+              //     ),
+              //   ),
             ],
           ),
         ],
@@ -578,9 +711,12 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 Expanded(child: _buildMainProductArea(screenWidth)),
               ],
             ),
+            bottomNavigationBar: BottomCartButton(
+                key: ValueKey(_orderService.cartItemCount), // Forces rebuild when count changes
+
+            ),
     );
   }
-
   // --- Widget Builders ---
 
   Widget _buildMobileCategoryChips() {
