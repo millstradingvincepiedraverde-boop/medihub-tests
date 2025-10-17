@@ -89,9 +89,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       children: [
                         // --- Quantity Controls ---
                         Container(
-                          decoration: BoxDecoration(
-                           
-                          ),
+                          decoration: BoxDecoration(),
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -143,12 +141,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(
-                              225,
-                              60,
-                              1,
-                              95,
-                            ),
+                            backgroundColor: const Color(0xFF4A306D),
                             padding: EdgeInsets.symmetric(
                               horizontal: buttonPadding * 2,
                               vertical: buttonPadding,

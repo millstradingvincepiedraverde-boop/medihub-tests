@@ -25,7 +25,7 @@ class _BottomCartButtonState extends State<BottomCartButton> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 30),
           decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 87, 0, 104),
+            color: const Color(0xFF4A306D),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -174,7 +174,7 @@ class _BottomCartButtonState extends State<BottomCartButton> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 77, 1, 128),
+                              color: const Color(0xFF4A306D),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(

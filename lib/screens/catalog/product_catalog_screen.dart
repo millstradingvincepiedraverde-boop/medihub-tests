@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:medihub_tests/screens/kiosk-main.dart';
+import 'package:medihub_tests/widgets/footer_widget.dart';
 import '../../constants/app_constants.dart';
 import '../../models/product.dart';
 import '../../services/order_service.dart';
@@ -76,19 +77,19 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     _resetInactivityTimer();
   }
 
-  // 🟣 SHOW "Are you still there?" DIALOG
   void _showInactivityDialog() {
     if (!mounted) return;
 
-    int countdown = 30; // number of seconds before returning
+    int countdown = 30;
     _dialogTimer?.cancel();
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black54, // dimmed background
+      barrierColor: Colors.black54,
       builder: (context) {
-        // Countdown timer
+        StateSetter? localSetState; // <-- nullable instead of late
+
         _dialogTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
           if (!mounted) return;
           if (countdown <= 1) {
@@ -98,100 +99,109 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             }
             _navigateToKiosk();
           } else {
-            setState(() => countdown--);
+            // Only call if initialized
+            if (localSetState != null) {
+              localSetState!(() {
+                countdown--;
+              });
+            }
           }
         });
 
         return StatefulBuilder(
-          builder: (context, setState) => Center(
-            child: Container(
-              width: 420,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Close (X) button
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.black54),
-                      onPressed: () {
-                        _dialogTimer?.cancel();
-                        Navigator.of(context).pop();
-                        _resetInactivityTimer();
-                      },
-                    ),
-                  ),
+          builder: (context, setState) {
+            localSetState = setState;
 
-                  // Main content
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      const Text(
-                        "We’ve noticed an inactivity",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
+            return Center(
+              child: Container(
+                width: 420,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.black54),
+                        onPressed: () {
+                          _dialogTimer?.cancel();
+                          Navigator.of(context).pop();
+                          _resetInactivityTimer();
+                        },
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        "Closing this session in $countdown seconds...",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black54,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _dialogTimer?.cancel();
-                            Navigator.of(context).pop();
-                            _resetInactivityTimer();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4A306D),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            "Extend session",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        const Text(
+                          "We’ve noticed an inactivity",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                            decoration: TextDecoration
+                                .none, // ⬅️ prevents yellow underline
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ],
+                        const SizedBox(height: 12),
+                        Text(
+                          "Closing this session in $countdown seconds...",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black54,
+                            decoration: TextDecoration
+                                .none, // ⬅️ prevents yellow underline
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _dialogTimer?.cancel();
+                              Navigator.of(context).pop();
+                              _resetInactivityTimer();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4A306D),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              "Extend session",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -366,7 +376,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                   fontSize: 14,
                   fontWeight: isLast ? FontWeight.bold : FontWeight.normal,
                   color: isLast
-                      ? const Color.fromARGB(255, 77, 5, 87)
+                      ? const Color(0xFF4A306D)
                       : Colors.grey.shade600,
                   decoration: isLast
                       ? TextDecoration.none
@@ -469,7 +479,20 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 _selectedSubType == null
                     ? 'All Types'
                     : _getSubTypeDisplayName(_selectedSubType),
-                style: const TextStyle(fontSize: 16),
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF4A306D), // text color
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF4A306D), // 💡 icon/text color
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onPressed: () {
                 _showSubcategoryFilter(context);
@@ -762,105 +785,11 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Browse Products'),
-        actions: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // IconButton(
-              //   icon: const Icon(Icons.shopping_cart),
-              //   onPressed: () {
-              //     // START OF CUSTOM HALF-SCREEN SLIDE-UP TRANSITION
-              //     Navigator.push(
-              //       context,
-              //       PageRouteBuilder(
-              //         // CRITICAL: Makes the previous screen visible underneath
-              //         opaque: false,
-              //         transitionDuration: const Duration(milliseconds: 350),
-              //         // This page builder handles placing the CartScreen content
-              //         pageBuilder: (context, animation, secondaryAnimation) {
-              //           // 1. Outer GestureDetector to catch taps on the semi-transparent area (scrim).
-              //           return GestureDetector(
-              //             onTap: () {
-              //               // Closes the route when the user taps the background/scrim area.
-              //               Navigator.pop(context);
-              //             },
-              //             child: Container(
-              //               // Add a semi-transparent black overlay (the scrim)
-              //               color: Colors.black.withOpacity(0.1),
-              //               alignment: Alignment.bottomCenter,
-              //               // 2. Inner GestureDetector to consume taps on the CartScreen content itself.
-              //               child: GestureDetector(
-              //                 onTap: () {
-              //                   // Important: Consume the tap so it doesn't bubble up and close the modal.
-              //                 },
-              //                 child: FractionallySizedBox(
-              //                   // Restrict the CartScreen height to about 55% of the screen
-              //                   heightFactor: 0.55,
-              //                   widthFactor: 1.0,
-              //                   // The CartScreen content
-              //                   child: const CartScreen(),
-              //                 ),
-              //               ),
-              //             ),
-              //           );
-              //         },
-              //         // Define the actual slide animation
-              //         transitionsBuilder:
-              //             (context, animation, secondaryAnimation, child) {
-              //           // Slide the content up from the bottom (Offset(0.0, 1.0) to Offset.zero)
-              //           const begin = Offset(0.0, 1.0);
-              //           const end = Offset.zero;
-              //           final slideTween = Tween(
-              //             begin: begin,
-              //             end: end,
-              //           ).chain(CurveTween(curve: Curves.easeOutCubic));
-
-              //           // We use a FadeTransition on the whole route to smoothly fade in the scrim background
-              //           return FadeTransition(
-              //             opacity: CurvedAnimation(
-              //               parent: animation,
-              //               curve: Curves.easeOut,
-              //             ),
-              //             // The actual content slides up
-              //             child: SlideTransition(
-              //               position: animation.drive(slideTween),
-              //               child:
-              //                   child, // The FractionallySizedBox container
-              //             ),
-              //           );
-              //         },
-              //       ),
-              //     ).then((_) => setState(() {}));
-              //     // END OF CUSTOM HALF-SCREEN SLIDE-UP TRANSITION
-              //   },
-              // ),
-              // if (_orderService.cartItemCount > 0)
-              //   Positioned(
-              //     right: 8,
-              //     top: 8,
-              //     child: Container(
-              //       padding: const EdgeInsets.all(4),
-              //       decoration: const BoxDecoration(
-              //         color: Colors.red,
-              //         shape: BoxShape.circle,
-              //       ),
-              //       child: Text(
-              //         '${_orderService.cartItemCount}',
-              //         style: const TextStyle(
-              //           color: Colors.white,
-              //           fontSize: 12,
-              //           fontWeight: FontWeight.bold,
-              //         ),
-              //       ),
-              //     ),
-              //   ),
-            ],
-          ),
-        ],
+        actions: [Stack(alignment: Alignment.center, children: [])],
       ),
       body: isLargeScreen
           ? Row(
-              // Desktop/Tablet Layout: Sidebar beside content
+              // === Desktop/Tablet Layout ===
               children: [
                 _buildSidebar(),
                 const VerticalDivider(width: 1),
@@ -868,19 +797,24 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               ],
             )
           : Column(
-              // Mobile Layout: Category chips above content
+              // === Mobile Layout ===
               children: [
-                _buildMobileCategoryChips(), // Replaces the sidebar
+                _buildMobileCategoryChips(),
                 Expanded(child: _buildMainProductArea(screenWidth)),
               ],
             ),
-      bottomNavigationBar: BottomCartButton(
-        key: ValueKey(
-          _orderService.cartItemCount,
-        ), // Forces rebuild when count changes
+
+      // === Bottom area with cart button and footer ===
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BottomCartButton(key: ValueKey(_orderService.cartItemCount)),
+          const FooterWidget(), // ⬅️ smaller + responsive footer below cart
+        ],
       ),
     );
   }
+
   // --- Widget Builders ---
 
   Widget _buildMobileCategoryChips() {
@@ -971,165 +905,163 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     );
   }
 
-  // NOTE: This code assumes you have defined the necessary enums (ProductCategory)
-  // and classes (Product, AppConstants).
-
-  // Import necessary packages (e.g., flutter/material.dart, flutter_svg.dart)
-
-  // --- START: Helper Widget for Sidebar Tiles ---
-
   Widget _buildCategoryTile({
     required String label,
-    required IconData icon,
+    String? imageUrl,
     required bool isSelected,
     required int count,
     required VoidCallback onTap,
   }) {
-    // Define the selection style: rounded background with a slight shadow.
     final Color primaryColor = const Color.fromARGB(255, 71, 3, 88);
-    final Color backgroundColor = isSelected
-        ? primaryColor
-        : Colors.transparent;
-    final Color labelColor = isSelected ? Colors.white : Colors.grey.shade800;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      padding: const EdgeInsets.only(left: 20.0, top: 10.0, bottom: 10.0),
+      // ⬆️ Removed right padding to let selected box align flush to the right edge
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          // Adding slight elevation and rounded corners for the selected state
-          decoration: BoxDecoration(
-            color: isSelected ? primaryColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            // Add a subtle shadow when selected
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: primaryColor.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // Highlight background that expands fully to the right
+            Positioned.fill(
+              right: 0,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeInOut,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withOpacity(0.2)
-                      : Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Icon(
-                    icon, // Using the standard icon as a fallback/placeholder
-                    color: isSelected ? Colors.white : primaryColor,
-                    size: 24,
-                  ),
+                      ? const Color(0xFFF3F1F6)
+                      : Colors.transparent,
                 ),
               ),
-              const SizedBox(width: 16),
+            ),
 
-              // 2. LABEL TEXT
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: labelColor,
-                      ),
+            // Actual content
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              child: Row(
+                children: [
+                  // Circular image thumbnail
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
                     ),
-                    if (!isSelected) // Show count only if not selected
-                      Text(
-                        '$count items',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
+                    clipBehavior: Clip.antiAlias,
+                    child: imageUrl != null && imageUrl.isNotEmpty
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey.shade400,
+                              size: 36,
+                            ),
+                          )
+                        : Icon(
+                            Icons.category,
+                            color: Colors.grey.shade400,
+                            size: 36,
+                          ),
+                  ),
+                  const SizedBox(width: 20),
+
+                  // Label and item count
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.normal,
+                            fontSize: 20,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
-                  ],
-                ),
+                        if (!isSelected)
+                          Text(
+                            '$count items',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildSidebar() {
-    // Use the same primary color for the sidebar background color
     final Color primaryColor = const Color.fromARGB(255, 71, 3, 88);
 
     return Container(
-      width: 280, // Fixed width for large screens
-      // Change background to white or a lighter tone for better contrast with the tiles
+      width: 320, // Slightly wider for kiosk layout
       color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo Area (Kept as is, using white background)
+          // Logo header
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(
                 bottom: BorderSide(color: Colors.grey.shade200, width: 1),
               ),
             ),
-            child: Row(children: [
-             
-            ],
-          ),
+            child: SvgPicture.network(
+              'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/logo.svg?v=1755583753',
+              height: 40,
+              fit: BoxFit.contain,
+            ),
           ),
 
-          // Category List
+          // Category list
           Expanded(
             child: ListView(
-              // Removed vertical padding here since it's now in the tile
-              padding: const EdgeInsets.symmetric(vertical: 0),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
-                // All Products Tile
                 _buildCategoryTile(
                   label: 'All Products',
-                  icon: Icons.grid_view,
+                  imageUrl: '',
                   isSelected: _selectedCategory == null,
                   count: AppConstants.productCatalog.length,
                   onTap: () {
                     _updateBreadcrumbPath(category: null, subType: null);
                   },
                 ),
+
                 const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 8,
-                  ), // Increased horizontal padding
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 8),
                   child: Divider(
                     height: 1,
-                    color: Color.fromARGB(
-                      255,
-                      230,
-                      230,
-                      230,
-                    ), // Lighter divider
+                    color: Color.fromARGB(255, 230, 230, 230),
                   ),
                 ),
-                // Dynamic Category Tiles
+
+                // Dynamic categories
                 ...ProductCategory.values.map((category) {
-                  // ... (Your existing logic for calculating count and creating tempProduct)
                   final count = AppConstants.getProductsByCategory(
                     category,
                   ).length;
+                  final products = AppConstants.getProductsByCategory(category);
+                  final imageUrl = products.isNotEmpty
+                      ? products.first.imageUrl
+                      : '';
+
                   final tempProduct = Product(
                     id: '',
                     name: '',
@@ -1137,17 +1069,16 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                     category: category,
                     subType: null,
                     price: 0,
-                    imageUrl: '',
+                    imageUrl: imageUrl,
                     features: [],
                     stockQuantity: 0,
                     color: primaryColor,
                     colorName: '',
                   );
-                  // ...
 
                   return _buildCategoryTile(
                     label: tempProduct.categoryDisplayName,
-                    icon: tempProduct.categoryIcon,
+                    imageUrl: imageUrl,
                     isSelected:
                         _selectedCategory == category &&
                         _selectedSubType == null,
@@ -1161,9 +1092,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             ),
           ),
 
-          // Support Info (Refined for the bottom edge)
+          // Support section
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(
@@ -1175,28 +1106,27 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               children: [
                 Icon(
                   Icons.contact_support_outlined,
-                  color: primaryColor, // Consistent primary color
-                  size: 32,
+                  color: primaryColor,
+                  size: 40,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Text(
                   'Need Help?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 18,
                     color: Colors.grey.shade800,
                   ),
                 ),
-                const SizedBox(height: 4),
-                // Use a Column for tighter control over the link colors
+                const SizedBox(height: 6),
                 Column(
                   children: [
                     Text(
                       AppConstants.supportEmail,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         color: primaryColor.withOpacity(0.8),
                         fontWeight: FontWeight.w500,
                       ),
@@ -1205,7 +1135,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                       AppConstants.supportPhone,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         color: Colors.grey.shade600,
                       ),
                     ),

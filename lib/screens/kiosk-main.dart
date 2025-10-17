@@ -44,7 +44,6 @@ class KioskMain extends StatefulWidget {
 }
 
 class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
-  bool _isCollapsed = false;
   int _currentSlideIndex = 0;
   Timer? _slideTimer;
   late AnimationController _timelineController;
@@ -55,7 +54,6 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
     if (slides.isEmpty) return;
 
     _timelineController = AnimationController(
@@ -90,33 +88,18 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
     });
   }
 
-  void _toggleKiosk() async {
-    if (_isCollapsed) return;
-
+  void _toggleKiosk() {
     _slideTimer?.cancel();
     _timelineController.stop();
 
-    setState(() => _isCollapsed = true);
-    await Future.delayed(_animationDuration);
-
-    if (mounted) _navigateToCatalog();
-  }
-
-  Future<void> _navigateToCatalog() async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-
-    await Navigator.pushReplacement(
+    // Instantly navigate to the catalog (no animation delay)
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const ProductCatalogScreen()),
     );
-
-    if (mounted) {
-      setState(() => _isCollapsed = false);
-    }
   }
 
-  // --- Responsive helper ---
+  // --- Responsive helpers ---
   bool _isMobile(Size size) => size.width < 600;
   bool _isTablet(Size size) => size.width >= 600 && size.width < 1024;
 
@@ -126,25 +109,27 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
     return base;
   }
 
-  // --- UI ---
+  // --- Slideshow ---
   Widget _buildSlideshow(Size size) {
     if (slides.isEmpty || _currentSlideIndex >= slides.length) {
       return const Center(child: Text('No slides available'));
     }
 
     final slide = slides[_currentSlideIndex];
-
     final isMobile = _isMobile(size);
     final isTablet = _isTablet(size);
 
-    final double imageWidth =
-        isMobile ? size.width * 0.8 : isTablet ? size.width * 0.5 : size.width * 0.4;
+    final double imageWidth = isMobile
+        ? size.width * 0.8
+        : isTablet
+        ? size.width * 0.5
+        : size.width * 0.4;
 
     final double textTop = isMobile
         ? size.height * 0.15
         : isTablet
-            ? size.height * 0.2
-            : size.height * 0.25;
+        ? size.height * 0.2
+        : size.height * 0.25;
 
     final double sidePadding = isMobile ? 20 : size.width * 0.1;
 
@@ -154,135 +139,123 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
         Positioned.fill(child: Container(color: const Color(0xFFF5F5F5))),
 
         // --- Text content ---
-        AnimatedPositioned(
-          duration: _animationDuration,
-          curve: Curves.easeInOutCubic,
-          top: _isCollapsed ? -200 : textTop,
+        Positioned(
+          top: textTop,
           left: sidePadding,
           right: sidePadding,
-          child: AnimatedOpacity(
-            opacity: _isCollapsed ? 0.0 : 1.0,
-            duration: _animationDuration,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: size.width * 0.8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SvgPicture.network(
-                    'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/logo.svg?v=1755583753',
-                    height: isMobile ? 16 : isTablet ? 20 : 26,
-                    fit: BoxFit.contain,
-                    placeholderBuilder: (context) =>
-                        const CircularProgressIndicator(),
-                  ),
-                  const SizedBox(height: 20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: size.width * 0.8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SvgPicture.network(
+                  'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/logo.svg?v=1755583753',
+                  height: isMobile
+                      ? 16
+                      : isTablet
+                      ? 20
+                      : 26,
+                  fit: BoxFit.contain,
+                  placeholderBuilder: (context) =>
+                      const CircularProgressIndicator(),
+                ),
+                const SizedBox(height: 20),
 
-                  // Title
-                  Text(
-                    slide.title,
+                // Title
+                Text(
+                  slide.title,
+                  style: TextStyle(
+                    fontSize: _scaleFont(60, size),
+                    color: const Color(0xFF191919),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Subtitle
+                Text(
+                  slide.subtitle,
+                  style: TextStyle(
+                    fontSize: _scaleFont(24, size),
+                    color: const Color(0xFF191919),
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Promo
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  color: const Color(0xFF4A306D),
+                  child: Text(
+                    slide.promoText,
                     style: TextStyle(
-                      fontSize: _scaleFont(60, size),
-                      color: const Color(0xFF191919),
+                      fontSize: _scaleFont(26, size),
+                      color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Subtitle
-                  Text(
-                    slide.subtitle,
-                    style: TextStyle(
-                      fontSize: _scaleFont(24, size),
-                      color: const Color(0xFF191919),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Promo
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    color: const Color(0xFF4A306D),
-                    child: Text(
-                      slide.promoText,
-                      style: TextStyle(
-                        fontSize: _scaleFont(26, size),
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // --- Product Image ---
-        AnimatedPositioned(
-          duration: _animationDuration,
-          curve: Curves.easeInOutCubic,
-          right: _isCollapsed
-              ? -size.width
-              : isMobile
-                  ? size.width * 0.1
-                  : size.width * 0.05,
-          top: isMobile ? size.height * 0.45 : size.height * 0.25,
-          child: AnimatedOpacity(
-            duration: _animationDuration,
-            opacity: _isCollapsed ? 0.0 : 1.0,
-            child: Image.network(
-              slide.imageUrl,
-              width: imageWidth,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) =>
-                  const SizedBox.shrink(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFooter(Size size) {
-    final isMobile = _isMobile(size);
-    final fontSize = _scaleFont(42, size);
-
-    return AnimatedPositioned(
-      duration: _animationDuration,
-      bottom: _isCollapsed ? -300 : 0,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 400),
-        opacity: _isCollapsed ? 0.0 : 1.0,
-        child: Container(
-          width: size.width,
-          height: isMobile ? 80 : 120,
-          color: const Color(0xFF191919),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.touch_app,
-                    color: Colors.white, size: isMobile ? 40 : 60),
-                const SizedBox(width: 20),
-                Text(
-                  'Touch to order',
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
         ),
+
+        // --- Product Image ---
+        Positioned(
+          right: isMobile ? size.width * 0.1 : size.width * 0.05,
+          top: isMobile ? size.height * 0.45 : size.height * 0.25,
+          child: Image.network(
+            slide.imageUrl,
+            width: imageWidth,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                const SizedBox.shrink(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- Footer ---
+  Widget _buildFooter(Size size) {
+    final isMobile = _isMobile(size);
+    final fontSize = _scaleFont(42, size);
+
+    return Positioned(
+      bottom: 0,
+      child: Container(
+        width: size.width,
+        height: isMobile ? 80 : 120,
+        color: const Color(0xFF191919),
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.touch_app,
+                color: Colors.white,
+                size: isMobile ? 40 : 60,
+              ),
+              const SizedBox(width: 20),
+              Text(
+                'Touch to order',
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
+  // --- Timeline bar ---
   Widget _buildTimeline(Size size) {
     return Positioned(
       bottom: _isMobile(size) ? 80 : 120,
@@ -296,7 +269,8 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
           builder: (context, child) => Align(
             alignment: Alignment.centerLeft,
             child: Container(
-              width: size.width *
+              width:
+                  size.width *
                   (_timelineController.isAnimating
                       ? _timelineController.value
                       : 0.0),
@@ -309,7 +283,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
     );
   }
 
-
+  // --- Build ---
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
