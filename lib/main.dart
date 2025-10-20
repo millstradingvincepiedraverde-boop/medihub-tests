@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '././screens/kiosk-main.dart'; // Assuming this points to your main Kiosk screen
-import 'package:google_fonts/google_fonts.dart';
-
+import '././screens/kiosk-main.dart'; // Your main kiosk screen
 
 // Helper function to play a light haptic tap
 void _playHapticFeedback() {
-  // Use HapticFeedback.lightImpact for a satisfying, non-distracting tap feel.
-  HapticFeedback.lightImpact();
+  HapticFeedback.lightImpact(); // subtle tactile response
 }
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Lock orientation to landscape for kiosk mode
+  // Lock orientation to landscape
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
@@ -22,7 +19,7 @@ void main() {
   // Hide system UI for kiosk mode
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-  // Play a haptic tap on app start to confirm initialization (optional but cool)
+  // Optional: haptic tap on startup
   _playHapticFeedback();
 
   runApp(const WheelchairKioskApp());
@@ -38,25 +35,20 @@ class WheelchairKioskApp extends StatelessWidget {
       home: const KioskMain(),
       theme: ThemeData(
         useMaterial3: true,
-        textTheme: GoogleFonts.interTextTheme(),
-        fontFamily: GoogleFonts.inter().fontFamily,
-        // Set a base color scheme
+
+        // 🧩 Apply GT Walsheim Pro font globally
+        fontFamily: 'GT Walsheim Pro',
+
         colorSchemeSeed: Colors.blue,
         brightness: Brightness.light,
 
-        // --- GLOBAL RESPONSIVENESS SETTINGS ---
-
-        // 1. VISUAL FEEDBACK (Splash/Ripple Effect)
-        // Customize the splash color to make the ripple highly visible
+        // --- Ripple / Highlight feedback ---
         splashColor: Colors.blue.withOpacity(0.4),
-        // Set a slight highlight color that appears immediately under the touch
         highlightColor: Colors.blue.withOpacity(0.1),
-        // Ensure a clear, circular ripple effect for all standard widgets
         splashFactory: InkRipple.splashFactory,
 
-        // 2. Tappable area customization (for ListTile, etc.)
+        // --- ListTile theme (flat, full-width taps) ---
         listTileTheme: const ListTileThemeData(
-          // Makes the highlight/splash extend to the full tile width
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),
       ),

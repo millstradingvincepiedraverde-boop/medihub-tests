@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'catalog/product_catalog_screen.dart';
 
 // --- Slide Model ---
@@ -92,7 +93,6 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
     _slideTimer?.cancel();
     _timelineController.stop();
 
-    // Instantly navigate to the catalog (no animation delay)
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const ProductCatalogScreen()),
@@ -161,28 +161,32 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 20),
 
-                // Title
+                // --- Title (GT Walsheim Pro-style) ---
                 Text(
                   slide.title,
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: _scaleFont(60, size),
                     color: const Color(0xFF191919),
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    height: 1.0,
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Subtitle
+                // --- Subtitle ---
                 Text(
                   slide.subtitle,
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: _scaleFont(24, size),
                     color: const Color(0xFF191919),
+                    fontWeight: FontWeight.w400,
+                    height: 1.2,
                   ),
                 ),
                 const SizedBox(height: 32),
 
-                // Promo
+                // --- Promo ---
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -191,10 +195,11 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
                   color: const Color(0xFF4A306D),
                   child: Text(
                     slide.promoText,
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: _scaleFont(26, size),
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
@@ -242,7 +247,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
               const SizedBox(width: 20),
               Text(
                 'Touch to order',
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: fontSize,
                   color: Colors.white,
                   fontWeight: FontWeight.w500,

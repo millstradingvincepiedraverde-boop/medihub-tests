@@ -602,13 +602,12 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   Widget _buildMainProductArea(double screenWidth) {
     // Determine crossAxisCount based on screen width
     int crossAxisCount;
-    // ADJUSTED: Fewer columns for larger cards
     if (screenWidth >= 1200) {
-      crossAxisCount = 3; // Reduced from 4
+      crossAxisCount = 3; // Desktop
     } else if (screenWidth >= _kTabletBreakpoint) {
-      crossAxisCount = 2; // Reduced from 3
+      crossAxisCount = 2; // Tablet
     } else {
-      crossAxisCount = 2; // Mobile view (kept 2)
+      crossAxisCount = 2; // Mobile
     }
 
     // Determine if we should show a narrower detail screen based on breakpoint
@@ -616,17 +615,17 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     return Column(
       children: [
-        // BREADCRUMB
+        // 🧭 Breadcrumb
         _buildBreadcrumb(),
 
-        // NEW: HERO BANNER
+        // 🏞 Hero Banner (only on home view)
         if (_selectedCategory == null && _searchQuery.isEmpty)
           _buildHeroBanner(screenWidth),
 
-        // Search and Filter Bar
+        // 🔍 Search & Filter Bar
         _buildSearchAndFilterBar(),
 
-        // Header (Removed content, keeping container structure for potential future use)
+        // Header (placeholder for sort/view toggles)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
@@ -638,12 +637,12 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Placeholder for potential sorting/view toggles
+              // reserved for future UI controls
             ],
           ),
         ),
 
-        // Grid
+        // 🛒 Product Grid
         Expanded(
           child: _filteredProducts.isEmpty
               ? Center(
@@ -667,87 +666,86 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                   ),
                 )
               : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount, // DYNAMIC CROSS AXIS COUNT
-                    childAspectRatio: 0.8, // Slightly more height for cards
-                    crossAxisSpacing: 20, // Increased spacing
-                    mainAxisSpacing: 20, // Increased spacing
+                  // ✅ Reduced outer padding for tighter layout
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
                   ),
+
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 0.82, // slightly taller cards
+                    crossAxisSpacing: 12, // reduced horizontal gap
+                    mainAxisSpacing: 12, // reduced vertical gap
+                  ),
+
                   itemCount: _filteredProducts.length,
                   itemBuilder: (context, index) {
                     final product = _filteredProducts[index];
                     return ProductCard(
                       product: product,
                       onTap: () {
-                        // **START OF CUSTOM FULL-WIDTH BOTTOM MODAL TRANSITION**
+                        // Custom full-width bottom modal
                         Navigator.push(
                           context,
                           PageRouteBuilder(
-                            // Set to false so the background (catalog) remains visible
                             opaque: false,
-                            // How long the slide transition takes
                             transitionDuration: const Duration(
                               milliseconds: 450,
                             ),
-                            // The page being built (the destination screen structure)
-                            pageBuilder: (context, animation, secondaryAnimation) {
-                              // Define the slide tween (from off-screen bottom to its final position)
-                              const begin = Offset(0.0, 1.0);
-                              const end = Offset.zero;
-                              final slideTween = Tween(
-                                begin: begin,
-                                end: end,
-                              ).chain(CurveTween(curve: Curves.easeOutCubic));
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) {
+                                  const begin = Offset(0.0, 1.0);
+                                  const end = Offset.zero;
+                                  final slideTween =
+                                      Tween(begin: begin, end: end).chain(
+                                        CurveTween(curve: Curves.easeOutCubic),
+                                      );
 
-                              // Use a FadeTransition on the whole route to smoothly fade in the scrim background
-                              return FadeTransition(
-                                opacity: animation,
-                                child: Stack(
-                                  children: [
-                                    // 1. Dismissal Area (The Scrim)
-                                    Positioned.fill(
-                                      child: GestureDetector(
-                                        // Dismisses the route when tapping outside the modal content
-                                        onTap: () => Navigator.pop(context),
-                                        behavior: HitTestBehavior.opaque,
-                                        child: Container(
-                                          color: Colors.black.withOpacity(0.4),
-                                        ),
-                                      ),
-                                    ),
-
-                                    // 2. Sliding, Full-Width, Partial-Height Content
-                                    Align(
-                                      // CRITICAL: Align the content to the bottom
-                                      alignment: Alignment.bottomCenter,
-                                      child: SlideTransition(
-                                        position: animation.drive(slideTween),
-                                        child: FractionallySizedBox(
-                                          // CRITICAL: Ensure full width
-                                          widthFactor: 1.0,
-                                          // CRITICAL: Restrict height to 85% of the screen
-                                          heightFactor: 0.85,
-                                          child: ClipRRect(
-                                            // Apply rounding only to the top corners
-                                            borderRadius:
-                                                const BorderRadius.vertical(
-                                                  top: Radius.circular(20),
-                                                  bottom: Radius.zero,
-                                                ),
-                                            child: ProductDetailScreen(
-                                              product: product,
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: Stack(
+                                      children: [
+                                        // Tap outside to dismiss
+                                        Positioned.fill(
+                                          child: GestureDetector(
+                                            onTap: () => Navigator.pop(context),
+                                            behavior: HitTestBehavior.opaque,
+                                            child: Container(
+                                              color: Colors.black.withOpacity(
+                                                0.4,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
+
+                                        // Bottom Sheet
+                                        Align(
+                                          alignment: Alignment.bottomCenter,
+                                          child: SlideTransition(
+                                            position: animation.drive(
+                                              slideTween,
+                                            ),
+                                            child: FractionallySizedBox(
+                                              widthFactor: 1.0,
+                                              heightFactor: 0.85,
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    const BorderRadius.vertical(
+                                                      top: Radius.circular(20),
+                                                      bottom: Radius.zero,
+                                                    ),
+                                                child: ProductDetailScreen(
+                                                  product: product,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              );
-                            },
-                            // Since the animation logic is now embedded in pageBuilder,
-                            // we just return the child directly here.
+                                  );
+                                },
                             transitionsBuilder:
                                 (
                                   context,
@@ -757,18 +755,18 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                                 ) => child,
                           ),
                         );
-                        // **END OF CUSTOM FULL-WIDTH BOTTOM MODAL TRANSITION**
                       },
-                      onAddToCart: () {
-                        setState(() {
-                          _orderService.addToCart(product);
-                        });
-                        SnackbarHelper.showSnackBar(
-                          context,
-                          message: '${product.name} added to cart',
-                          behavior: SnackBarBehavior.floating,
-                        );
-                      },
+                      // Uncomment to re-enable cart
+                      // onAddToCart: () {
+                      //   setState(() {
+                      //     _orderService.addToCart(product);
+                      //   });
+                      //   SnackbarHelper.showSnackBar(
+                      //     context,
+                      //     message: '${product.name} added to cart',
+                      //     behavior: SnackBarBehavior.floating,
+                      //   );
+                      // },
                     );
                   },
                 ),
@@ -783,10 +781,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     final isLargeScreen = screenWidth >= _kTabletBreakpoint;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Browse Products'),
-        actions: [Stack(alignment: Alignment.center, children: [])],
-      ),
       body: isLargeScreen
           ? Row(
               // === Desktop/Tablet Layout ===
@@ -947,11 +941,11 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                     height: 72,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: Color.fromARGB(255, 238, 238, 238),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.network(
+                        ? Image.asset(
                             imageUrl,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => Icon(
@@ -1005,7 +999,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   }
 
   Widget _buildSidebar() {
-    final Color primaryColor = const Color.fromARGB(255, 71, 3, 88);
+    final Color primaryColor = const Color(0xFF4A306D); // updated color #4A306D
 
     return Container(
       width: 320, // Slightly wider for kiosk layout
@@ -1013,15 +1007,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo header
+          // 🏷️ Logo Header
           Container(
             padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200, width: 1),
-              ),
-            ),
+            decoration: BoxDecoration(color: Colors.white),
             child: SvgPicture.network(
               'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/logo.svg?v=1755583753',
               height: 40,
@@ -1029,21 +1018,11 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             ),
           ),
 
-          // Category list
+          // 📋 Category List
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
-                _buildCategoryTile(
-                  label: 'All Products',
-                  imageUrl: '',
-                  isSelected: _selectedCategory == null,
-                  count: AppConstants.productCatalog.length,
-                  onTap: () {
-                    _updateBreadcrumbPath(category: null, subType: null);
-                  },
-                ),
-
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 32, vertical: 8),
                   child: Divider(
@@ -1052,7 +1031,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                   ),
                 ),
 
-                // Dynamic categories
+                // 🧩 Dynamic Categories
                 ...ProductCategory.values.map((category) {
                   final count = AppConstants.getProductsByCategory(
                     category,
@@ -1092,7 +1071,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             ),
           ),
 
-          // Support section
+          // 💬 Support Section
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             decoration: BoxDecoration(
@@ -1154,56 +1133,153 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     final subTypes = _getSubTypesForCategory(_selectedCategory!);
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Filter by Type',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+      builder: (context) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.85,
+              constraints: const BoxConstraints(maxWidth: 480),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ✳️ Title Row with Close Button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Filter by Type',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.black54),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ✳️ Subtype Grid (2 columns)
+                  SizedBox(
+                    height: 300,
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 3.2, // wider chip layout
+                      shrinkWrap: true,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        // All Types chip
+                        ChoiceChip(
+                          label: const Text('All Types'),
+                          selected: _selectedSubType == null,
+                          onSelected: (selected) {
+                            _updateBreadcrumbPath(
+                              category: _selectedCategory,
+                              subType: null,
+                            );
+                            Navigator.pop(context);
+                          },
+                          selectedColor: const Color(0xFF4A306D),
+                          labelStyle: TextStyle(
+                            fontSize: 16,
+                            color: _selectedSubType == null
+                                ? Colors.white
+                                : Colors.black87,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                            side: BorderSide(
+                              color: _selectedSubType == null
+                                  ? const Color(0xFF4A306D)
+                                  : Colors.grey.shade300,
+                              width: 1.2,
+                            ),
+                          ),
+                          avatar: _selectedSubType == null
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 20,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+
+                        // Other subtype chips
+                        ...subTypes.map((subType) {
+                          final selected = _selectedSubType == subType;
+                          return ChoiceChip(
+                            label: Text(
+                              _getSubTypeDisplayName(subType),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: selected ? Colors.white : Colors.black87,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            selected: selected,
+                            onSelected: (value) {
+                              _updateBreadcrumbPath(
+                                category: _selectedCategory,
+                                subType: value ? subType : null,
+                              );
+                              Navigator.pop(context);
+                            },
+                            selectedColor: const Color(0xFF4A306D),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                              side: BorderSide(
+                                color: selected
+                                    ? const Color(0xFF4A306D)
+                                    : Colors.grey.shade300,
+                                width: 1.2,
+                              ),
+                            ),
+                            avatar: selected
+                                ? const Icon(
+                                    Icons.check,
+                                    size: 20,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('All Types'),
-                  selected: _selectedSubType == null,
-                  onSelected: (selected) {
-                    // Update category with subType null
-                    _updateBreadcrumbPath(
-                      category: _selectedCategory,
-                      subType: null,
-                    );
-                    Navigator.pop(context);
-                  },
-                ),
-                ...subTypes.map((subType) {
-                  return ChoiceChip(
-                    label: Text(_getSubTypeDisplayName(subType)),
-                    selected: _selectedSubType == subType,
-                    onSelected: (selected) {
-                      // Update category with selected subType
-                      _updateBreadcrumbPath(
-                        category: _selectedCategory,
-                        subType: selected ? subType : null,
-                      );
-                      Navigator.pop(context);
-                    },
-                  );
-                }),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

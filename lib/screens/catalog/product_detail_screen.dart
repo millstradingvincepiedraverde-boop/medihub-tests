@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:carousel_slider/carousel_slider.dart'; // kept for optional future use
 import '../../models/product.dart';
 import '../../services/order_service.dart';
 import '../../utils/snackbar_helper.dart';
@@ -15,224 +16,345 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final _orderService = OrderService();
   int _quantity = 1;
+  int _currentImage = 0;
+
+  // If you later have multiple images per product, replace this list with them.
+  late final List<String> galleryImages;
+  final ScrollController _thumbScrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Use main image only by default (no _1/_2 suffixing)
+    final main = widget.product.imageUrl;
+    galleryImages = [main]; // keep single image for now — replace with real list when available
+  }
+
+  @override
+  void dispose() {
+    _thumbScrollController.dispose();
+    super.dispose();
+  }
+
+  // helper to scroll thumbnails so tapped index is visible/centered
+  void _scrollThumbsToIndex(int index, double thumbWidth, double spacing) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final targetOffset =
+        (index * (thumbWidth + spacing)) - (screenWidth / 2) + (thumbWidth / 2);
+    final clamped = targetOffset.clamp(
+      _thumbScrollController.position.minScrollExtent,
+      _thumbScrollController.position.maxScrollExtent,
+    );
+    _thumbScrollController.animateTo(
+      clamped,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final p = widget.product;
-    final size = MediaQuery.of(context).size;
-    final isWide = size.width > 900;
-    final isTablet = size.width > 600 && size.width <= 900;
-
-    double imageSize = isWide
-        ? size.width * 0.25
-        : isTablet
-        ? size.width * 0.35
-        : size.width * 0.6;
-
-    double buttonPadding = isWide ? 28 : 20;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+        child: LayoutBuilder(builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 1000;
+          final isTablet =
+              constraints.maxWidth > 600 && constraints.maxWidth <= 1000;
+
+          double imageSize = isWide
+              ? constraints.maxWidth * 0.25
+              : isTablet
+                  ? constraints.maxWidth * 0.4
+                  : constraints.maxWidth * 0.7;
+
+          double horizontalPadding = isWide ? 120 : (isTablet ? 40 : 16);
+          double fontTitle = isWide ? 32 : (isTablet ? 22 : 16);
+          double priceFont = isWide ? 48 : (isTablet ? 36 : 28);
+
+          // thumbnail sizing (compact)
+          final double thumbWidth = isWide ? 160 : (isTablet ? 120 : 88);
+          final double thumbSpacing = 8.0;
+          final thumbHeight = thumbWidth * 0.7;
+
+          return Stack(
             children: [
-              // === TOP SECTION (Image, Name, Price, Controls) ===
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isWide
-                      ? 80
-                      : isTablet
-                      ? 40
-                      : 16,
-                  vertical: 16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // === IMAGE ===
-                    _buildImage(p, imageSize),
-                    const SizedBox(height: 24),
-
-                    // === NAME & PRICE ===
-                    Text(
-                      p.name,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: isWide
-                            ? 32
-                            : isTablet
-                            ? 22
-                            : 12,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF191919),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${AppConstants.currencySymbol}${p.price.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: isWide ? 48 : 32,
-                        fontWeight: FontWeight.w900,
-                        color: const Color.fromARGB(255, 0, 0, 0),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // === QUANTITY + ADD TO CART ===
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 16,
-                      runSpacing: 16,
+              SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // --- Quantity Controls ---
-                        Container(
-                          decoration: BoxDecoration(),
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        // === TOP SECTION ===
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
+                            vertical: isWide ? 60 : 40,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              IconButton(
-                                onPressed: () {
-                                  if (_quantity > 1) {
-                                    setState(() => _quantity--);
-                                  }
-                                },
-                                icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                  size: 28,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8.0,
-                                ),
-                                child: Text(
-                                  '$_quantity',
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                              // === MAIN IMAGE ===
+                              Hero(
+                                tag: 'product_${p.id}',
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 250),
+                                  child: Image.asset(
+                                    galleryImages[_currentImage],
+                                    key: ValueKey<int>(_currentImage),
+                                    width: imageSize,
+                                    height: imageSize,
+                                    fit: BoxFit.contain, // preserves aspect ratio
                                   ),
                                 ),
                               ),
-                              IconButton(
-                                onPressed: () => setState(() => _quantity++),
-                                icon: const Icon(
-                                  Icons.add_circle_outline,
-                                  size: 28,
+
+                              const SizedBox(height: 12),
+
+                              // === COMPACT THUMBNAIL STRIP (replaces the previous carousel for thumbnails) ===
+                              // Keeps thumbnails compact & centered and avoids controller type issues.
+                              if (galleryImages.isNotEmpty)
+                                SizedBox(
+                                  height: thumbHeight,
+                                  child: Center(
+                                    child: ListView.separated(
+                                      controller: _thumbScrollController,
+                                      scrollDirection: Axis.horizontal,
+                                      shrinkWrap: true,
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: (constraints.maxWidth -
+                                                  (galleryImages.length *
+                                                          (thumbWidth +
+                                                              thumbSpacing) -
+                                                      thumbSpacing)) /
+                                              2 >
+                                              0
+                                              ? 0
+                                              : 0),
+                                      itemCount: galleryImages.length,
+                                      separatorBuilder: (_, __) =>
+                                          SizedBox(width: thumbSpacing),
+                                      itemBuilder: (context, index) {
+                                        final img = galleryImages[index];
+                                        final selected = index == _currentImage;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            // update main image
+                                            setState(() => _currentImage = index);
+                                            // scroll strip so tapped thumb is centered/visible
+                                            if (_thumbScrollController.hasClients) {
+                                              _scrollThumbsToIndex(
+                                                index,
+                                                thumbWidth,
+                                                thumbSpacing,
+                                              );
+                                            }
+                                          },
+                                          child: AnimatedContainer(
+                                            duration:
+                                                const Duration(milliseconds: 180),
+                                            width: thumbWidth,
+                                            height: thumbHeight,
+                                            margin: EdgeInsets.symmetric(
+                                                vertical: selected ? 0 : 6),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: selected
+                                                    ? const Color(0xFF4A306D)
+                                                    : Colors.grey.shade300,
+                                                width: selected ? 2.6 : 1.4,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              color: Colors.grey.shade100,
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              child: Image.asset(
+                                                img,
+                                                fit: BoxFit.cover,
+                                                width: thumbWidth,
+                                                height: thumbHeight,
+                                                errorBuilder:
+                                                    (context, error, stack) =>
+                                                        Container(
+                                                  color: Colors.grey[200],
+                                                  alignment: Alignment.center,
+                                                  child: Icon(
+                                                    Icons.image_not_supported,
+                                                    color:
+                                                        Colors.grey.shade400,
+                                                    size: thumbWidth * 0.4,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+
+                              const SizedBox(height: 24),
+
+                              // === NAME + PRICE ===
+                              Text(
+                                p.name,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: fontTitle,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF191919),
                                 ),
                               ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${AppConstants.currencySymbol}${p.price.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  fontSize: priceFont,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+
+                              // === QUANTITY + ADD TO CART ===
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 16,
+                                runSpacing: 16,
+                                children: [
+                                  _quantityControl(),
+                                  _addToCartButton(p, isWide ? 28 : 20),
+                                ],
+                              ),
+                              const SizedBox(height: 48),
                             ],
                           ),
                         ),
 
-                        // --- Add to Cart Button ---
-                        ElevatedButton(
-                          onPressed: () {
-                            for (int i = 0; i < _quantity; i++) {
-                              _orderService.addToCart(p);
-                            }
-                            SnackbarHelper.showSnackBar(
-                              context,
-                              message: '${p.name} added to cart ×$_quantity',
-                              backgroundColor: Colors.deepPurple,
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4A306D),
+                        // === BLACK DETAILS SECTION (wide 2-column preserved) ===
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            color: const Color(0xFF191919),
                             padding: EdgeInsets.symmetric(
-                              horizontal: buttonPadding * 2,
-                              vertical: buttonPadding,
+                              horizontal: isWide ? 100 : 24,
+                              vertical: isWide ? 60 : 40,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'ADD TO CART',
-                            style: TextStyle(
-                              fontSize: isWide ? 20 : 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                              color: Colors.white,
-                            ),
+                            child: isWide
+                                ? Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: _buildLeftColumn(p)),
+                                      const SizedBox(width: 40),
+                                      Expanded(child: _buildRightColumn()),
+                                    ],
+                                  )
+                                : Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _buildLeftColumn(p),
+                                      const SizedBox(height: 32),
+                                      _buildRightColumn(),
+                                    ],
+                                  ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 40),
-                  ],
+                  ),
                 ),
               ),
 
-              // === BLACK DETAILS SECTION (Full Width, No Outer Padding) ===
-              Container(
-                width: double.infinity,
-                color: const Color(0xFF191919),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 32,
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isWideLayout = constraints.maxWidth > 700;
-                    return isWideLayout
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(child: _buildLeftColumn(p)),
-                              const SizedBox(width: 24),
-                              Expanded(child: _buildRightColumn()),
-                            ],
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildLeftColumn(p),
-                              const SizedBox(height: 24),
-                              _buildRightColumn(),
-                            ],
-                          );
-                  },
+              // === FIXED CLOSE BUTTON ===
+              Positioned(
+                top: 12,
+                right: 12,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    size: 30,
+                    color: Colors.black,
+                  ),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
             ],
-          ),
-        ),
+          );
+        }),
       ),
     );
   }
 
-  // === IMAGE SECTION ===
-  Widget _buildImage(Product p, double size) {
-    return Stack(
-      alignment: Alignment.topRight,
-      children: [
-        Center(
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: Colors.grey.shade100,
-              image: DecorationImage(
-                image: NetworkImage(p.imageUrl),
-                fit: BoxFit.contain,
-              ),
+  // === QUANTITY CONTROL ===
+  Widget _quantityControl() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: () {
+              if (_quantity > 1) setState(() => _quantity--);
+            },
+            icon: const Icon(Icons.remove_circle_outline, size: 28),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(
+              '$_quantity',
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
-        ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: IconButton(
-            icon: const Icon(Icons.close, size: 28, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
+          IconButton(
+            onPressed: () => setState(() => _quantity++),
+            icon: const Icon(Icons.add_circle_outline, size: 28),
           ),
+        ],
+      ),
+    );
+  }
+
+  // === ADD TO CART BUTTON ===
+  Widget _addToCartButton(Product p, double buttonPadding) {
+    return ElevatedButton(
+      onPressed: () {
+        for (int i = 0; i < _quantity; i++) {
+          _orderService.addToCart(p);
+        }
+        SnackbarHelper.showSnackBar(
+          context,
+          message: '${p.name} added to cart ×$_quantity',
+          backgroundColor: Colors.deepPurple,
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF4A306D),
+        padding: EdgeInsets.symmetric(
+          horizontal: buttonPadding * 2,
+          vertical: buttonPadding,
         ),
-      ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: const Text(
+        'ADD TO CART',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 
@@ -253,7 +375,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         Text(
           p.description,
           style: const TextStyle(
-            color: Colors.white,
+            color: Colors.white70,
             height: 1.5,
             fontSize: 16,
           ),
@@ -340,12 +462,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // === INFO BOXES ===
+  // === INFO BOX ===
   Widget _infoBox(List<String> items) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.white30),
+        border: Border.all(color: Colors.white24),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(16),
@@ -377,11 +499,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  // === TEXT INFO BOX ===
   Widget _infoBoxText(Map<String, String> specs) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.white30),
+        border: Border.all(color: Colors.white24),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(16),

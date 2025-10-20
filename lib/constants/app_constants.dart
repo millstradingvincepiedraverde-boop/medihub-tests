@@ -18,7 +18,7 @@ class AppConstants {
       category: ProductCategory.wheelchairs,
       subType: WheelchairType.manual,
       price: 299.00,
-      imageUrl: 'assets/images/wheelchairs/wheelchair-1.jpg',
+      imageUrl: 'assets/images/wheelchairs/wheelchair-1.png',
       features: [
         'Steel frame construction',
         'Padded armrests and seat',
@@ -41,7 +41,7 @@ class AppConstants {
       category: ProductCategory.wheelchairs,
       subType: WheelchairType.electric,
       price: 1850.00,
-      imageUrl: 'assets/images/wheelchairs/wheelchair-2.jpg',
+      imageUrl: 'assets/images/wheelchairs/wheelchair-2.png',
       features: [
         'Joystick controller',
         '20km battery range',
@@ -64,7 +64,7 @@ class AppConstants {
       category: ProductCategory.wheelchairs,
       subType: WheelchairType.transport,
       price: 199.00,
-      imageUrl: 'assets/images/wheelchairs/wheelchair-3.jpg',
+      imageUrl: 'assets/images/wheelchairs/wheelchair-3.png',
       features: [
         'Lightweight design (9kg)',
         'Companion hand brakes',
@@ -88,7 +88,7 @@ class AppConstants {
       category: ProductCategory.mobilityScooters,
       subType: MobilityScooterType.travelScooter,
       price: 1299.00,
-      imageUrl: 'assets/images/mobilityscooters/scooters-1.jpg',
+      imageUrl: 'assets/images/mobilityscooters/scooters-1.png',
       features: [
         'Disassembles into 5 pieces',
         '15km range per charge',
@@ -111,7 +111,7 @@ class AppConstants {
       category: ProductCategory.mobilityScooters,
       subType: MobilityScooterType.heavyDuty,
       price: 2499.00,
-      imageUrl: 'https://via.placeholder.com/300x300/5856D6/FFFFFF?text=Heavy+Duty',
+      imageUrl: 'assets/images/mobilityscooters/scooters-1.png',
       features: [
         'Up to 180kg weight capacity',
         '40km range',
@@ -134,7 +134,7 @@ class AppConstants {
       category: ProductCategory.mobilityScooters,
       subType: MobilityScooterType.foldable,
       price: 1799.00,
-      imageUrl: 'https://via.placeholder.com/300x300/00C7BE/FFFFFF?text=Foldable',
+      imageUrl: 'assets/images/mobilityscooters/scooters-1.png',
       features: [
         'One-button auto-fold',
         '12kg lightweight',
@@ -158,7 +158,7 @@ class AppConstants {
       category: ProductCategory.dailyLivingAids,
       subType: DailyLivingAidType.walkingAids,
       price: 89.00,
-      imageUrl: 'https://via.placeholder.com/300x300/FF2D55/FFFFFF?text=Walker',
+      imageUrl: 'assets/images/dailyaids/dailyaids-1.png',
       features: [
         'Height adjustable',
         'Folds for storage',
@@ -181,7 +181,7 @@ class AppConstants {
       category: ProductCategory.dailyLivingAids,
       subType: DailyLivingAidType.bathroomSafety,
       price: 65.00,
-      imageUrl: 'https://via.placeholder.com/300x300/AF52DE/FFFFFF?text=Shower+Chair',
+      imageUrl: 'assets/images/dailyaids/dailyaids-1.png',
       features: [
         'Height adjustable legs',
         'Padded seat and back',
@@ -204,7 +204,7 @@ class AppConstants {
       category: ProductCategory.dailyLivingAids,
       subType: DailyLivingAidType.reachersGrabbers,
       price: 24.99,
-      imageUrl: 'https://via.placeholder.com/300x300/007AFF/FFFFFF?text=Reacher',
+      imageUrl: 'assets/images/dailyaids/dailyaids-1.png',
       features: [
         '32-inch reach',
         'Rotating jaw',
@@ -229,7 +229,7 @@ class AppConstants {
       category: ProductCategory.dailyLivingAids,
       subType: DailyLivingAidType.walkingAids,
       price: 139.00,
-      imageUrl: 'https://via.placeholder.com/300x300/FFA500/FFFFFF?text=Rollator',
+      imageUrl: 'assets/images/dailyaids/dailyaids-1.png',
       features: [
         'Smooth-rolling 6-inch wheels',
         'Loop-lock hand brakes',
@@ -254,7 +254,7 @@ class AppConstants {
       category: ProductCategory.dailyLivingAids,
       subType: DailyLivingAidType.reachersGrabbers,
       price: 29.99,
-      imageUrl: 'https://via.placeholder.com/300x300/32CD32/FFFFFF?text=Caddy',
+      imageUrl: 'assets/images/dailyaids/dailyaids-1.png',
       features: [
         'Universal fit',
         'Two mesh pockets',
@@ -278,7 +278,7 @@ class AppConstants {
       category: ProductCategory.homeHealthCare,
       subType: HomeHealthCareType.hospital_beds,
       price: 1899.00,
-      imageUrl: 'https://via.placeholder.com/300x300/8E8E93/FFFFFF?text=Hospital+Bed',
+      imageUrl: 'assets/images/homecare/homecare-1.png',
       features: [
         'Electric head & foot adjustment',
         'Side rails included',
@@ -301,7 +301,7 @@ class AppConstants {
       category: ProductCategory.homeHealthCare,
       subType: HomeHealthCareType.oxygenConcentrators,
       price: 2299.00,
-      imageUrl: 'https://via.placeholder.com/300x300/34C759/FFFFFF?text=Oxygen',
+      imageUrl: 'assets/images/homecare/homecare-1.png',
       features: [
         'Pulse dose delivery',
         'Up to 5 liters per minute',
@@ -324,7 +324,7 @@ class AppConstants {
       category: ProductCategory.homeHealthCare,
       subType: HomeHealthCareType.bloodPressureMonitors,
       price: 49.99,
-      imageUrl: 'https://via.placeholder.com/300x300/FF3B30/FFFFFF?text=BP+Monitor',
+      imageUrl: 'assets/images/homecare/homecare-1.png',
       features: [
         'One-touch operation',
         'Irregular heartbeat detection',
