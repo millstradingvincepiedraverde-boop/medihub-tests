@@ -86,7 +86,7 @@ class _AdminDashboardScreenState extends State {
   final int totalOrders = orders.length;
   final int totalItems = orders.fold<int>(
     0,
-    (sum, order) => sum + order.totalItems as int,
+    (sum, order) => sum + order.totalItems,
   );
 
     return Scaffold(

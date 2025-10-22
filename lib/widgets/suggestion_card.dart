@@ -56,7 +56,7 @@ class SuggestionCard extends StatelessWidget {
               child: Container(
                 height: 50,
                 width: 50,
-                color: product.color.withOpacity(0.1),
+                color: product.color?.withOpacity(0.1),
                 child: Icon(Icons.medical_services_outlined, color: product.color),
               ),
             ),

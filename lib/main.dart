@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '././screens/kiosk-main.dart'; // Your main kiosk screen
+import 'package:provider/provider.dart';
+import './screens/kiosk-main.dart';
+import './controllers/product_controller.dart'; // ✅ Import your controller
 
 // Helper function to play a light haptic tap
 void _playHapticFeedback() {
@@ -22,7 +24,16 @@ void main() {
   // Optional: haptic tap on startup
   _playHapticFeedback();
 
-  runApp(const WheelchairKioskApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => ProductController(),
+        ), // ✅ add this
+      ],
+      child: const WheelchairKioskApp(),
+    ),
+  );
 }
 
 class WheelchairKioskApp extends StatelessWidget {
@@ -35,19 +46,14 @@ class WheelchairKioskApp extends StatelessWidget {
       home: const KioskMain(),
       theme: ThemeData(
         useMaterial3: true,
-
-        // 🧩 Apply GT Walsheim Pro font globally
         fontFamily: 'GT Walsheim Pro',
-
         colorSchemeSeed: Colors.blue,
         brightness: Brightness.light,
 
-        // --- Ripple / Highlight feedback ---
         splashColor: Colors.blue.withOpacity(0.4),
         highlightColor: Colors.blue.withOpacity(0.1),
         splashFactory: InkRipple.splashFactory,
 
-        // --- ListTile theme (flat, full-width taps) ---
         listTileTheme: const ListTileThemeData(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),

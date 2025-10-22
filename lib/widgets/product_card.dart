@@ -42,7 +42,7 @@ class ProductCard extends StatelessWidget {
                       aspectRatio: 1, // makes image box more square
                       child: Hero(
                         tag: 'product_${product.id}',
-                        child: Image.asset(
+                        child: Image.network(
                           product.imageUrl,
                           fit: BoxFit.contain,
                           width: double.infinity,

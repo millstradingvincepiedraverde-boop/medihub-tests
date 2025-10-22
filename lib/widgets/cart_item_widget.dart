@@ -28,7 +28,7 @@ class CartItemWidget extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: orderItem.product.color.withOpacity(0.1),
+                color: orderItem.product.color?.withOpacity(0.1),
                 image: DecorationImage(
                   image: NetworkImage(orderItem.product.imageUrl),
                   fit: BoxFit.contain,

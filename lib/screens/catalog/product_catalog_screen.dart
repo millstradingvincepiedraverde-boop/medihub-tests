@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:medihub_tests/controllers/product_controller.dart';
 import 'package:medihub_tests/screens/kiosk-main.dart';
 import 'package:medihub_tests/widgets/footer_widget.dart';
 import '../../constants/app_constants.dart';
@@ -12,6 +13,7 @@ import '../../utils/snackbar_helper.dart';
 import '../cart/cart_screen.dart';
 import 'product_detail_screen.dart';
 import '../../widgets/bottom_cart_button.dart';
+import 'package:provider/provider.dart';
 
 class ProductCatalogScreen extends StatefulWidget {
   const ProductCatalogScreen({super.key});
@@ -47,8 +49,13 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController(text: _searchQuery);
-    _startInactivityTimer();
+
+    _searchController = TextEditingController();
+
+    // ✅ Also fetch your products here if not already done
+    Future.microtask(() {
+      context.read<ProductController>().fetchProducts(forceRefresh: true);
+    });
   }
 
   @override
@@ -73,7 +80,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     _startInactivityTimer();
   }
 
-  void _onUserInteraction([_]) {
+  void _onUserInteraction() {
     _resetInactivityTimer();
   }
 
@@ -217,14 +224,19 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   }
 
   List<Product> get _filteredProducts {
-    var products = _selectedCategory == null
-        ? AppConstants.productCatalog
-        : AppConstants.getProductsByCategory(_selectedCategory!);
+    final productController = context.watch<ProductController>();
 
+    // Start with all products or those filtered by category
+    var products = _selectedCategory == null
+        ? productController.products
+        : productController.getProductsByCategory(_selectedCategory!);
+
+    // Filter by subtype if selected
     if (_selectedSubType != null) {
       products = products.where((p) => p.subType == _selectedSubType).toList();
     }
 
+    // Apply search query if not empty
     if (_searchQuery.isNotEmpty) {
       final lowerCaseQuery = _searchQuery.toLowerCase();
       products = products.where((product) {
@@ -242,6 +254,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     final tempProduct = Product(
       id: '',
+      sku: '',
       name: '',
       description: '',
       category: _selectedCategory!,
@@ -256,19 +269,19 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     return tempProduct.subTypeDisplayName;
   }
 
-  List<dynamic> _getSubTypesForCategory(ProductCategory category) {
-    switch (category) {
-      case ProductCategory.wheelchairs:
-        // Assuming WheelchairType is imported or globally available
-        return WheelchairType.values;
-      case ProductCategory.mobilityScooters:
-        return MobilityScooterType.values;
-      case ProductCategory.dailyLivingAids:
-        return DailyLivingAidType.values;
-      case ProductCategory.homeHealthCare:
-        return HomeHealthCareType.values;
-    }
-  }
+  // List<dynamic> _getSubTypesForCategory(ProductCategory category) {
+  //   switch (category) {
+  //     case ProductCategory.wheelchairs:
+  //       // Assuming WheelchairType is imported or globally available
+  //       return WheelchairType.values;
+  //     case ProductCategory.mobilityScooters:
+  //       return MobilityScooterType.values;
+  //     case ProductCategory.dailyLivingAids:
+  //       return DailyLivingAidType.values;
+  //     case ProductCategory.homeHealthCare:
+  //       return HomeHealthCareType.values;
+  //   }
+  // }
 
   // --- FIX: SAFE LOOKUP HELPER FUNCTION ---
   ProductCategory? _getCategoryFromDisplayName(String displayName) {
@@ -277,9 +290,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       final tempProduct = Product(
         id: '',
         name: '',
+        sku: '',
         description: '',
         category: category,
-        subType: null,
+        subType: '',
         price: 0,
         imageUrl: '',
         features: [],
@@ -307,10 +321,11 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         // Need a temporary product to get the display name for the category
         final tempProduct = Product(
           id: '',
+          sku: '',
           name: '',
           description: '',
           category: category,
-          subType: null,
+          subType: '',
           price: 0,
           imageUrl: '',
           features: [],
@@ -495,7 +510,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 ),
               ),
               onPressed: () {
-                _showSubcategoryFilter(context);
+               // _showSubcategoryFilter(context);
               },
             ),
         ],
@@ -568,10 +583,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                   ElevatedButton(
                     onPressed: () {
                       // Action: Navigate to the featured product or sale category (e.g., Mobility Scooters)
-                      _updateBreadcrumbPath(
-                        category: ProductCategory.mobilityScooters,
-                        subType: null,
-                      );
+                      // _updateBreadcrumbPath(
+                      //   category: ProductCategory.mobilityScooters,
+                      //   subType: null,
+                      // );
                     },
                     style: ElevatedButton.styleFrom(
                       foregroundColor: const Color.fromARGB(255, 71, 3, 88),
@@ -834,10 +849,11 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             ...ProductCategory.values.map((category) {
               final tempProduct = Product(
                 id: '',
+                sku: '',
                 name: '',
                 description: '',
                 category: category,
-                subType: null,
+                subType: '',
                 price: 0,
                 imageUrl: '',
                 features: [],
@@ -945,15 +961,27 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.asset(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              Icons.image_not_supported,
-                              color: Colors.grey.shade400,
-                              size: 36,
-                            ),
-                          )
+                        ? (imageUrl.startsWith('http')
+                              ? Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(
+                                        Icons.broken_image,
+                                        color: Colors.grey.shade400,
+                                        size: 36,
+                                      ),
+                                )
+                              : Image.asset(
+                                  imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.grey.shade400,
+                                        size: 36,
+                                      ),
+                                ))
                         : Icon(
                             Icons.category,
                             color: Colors.grey.shade400,
@@ -1033,20 +1061,24 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
                 // 🧩 Dynamic Categories
                 ...ProductCategory.values.map((category) {
-                  final count = AppConstants.getProductsByCategory(
+                  final productController = context.watch<ProductController>();
+                  final products = productController.getProductsByCategory(
                     category,
-                  ).length;
-                  final products = AppConstants.getProductsByCategory(category);
+                  );
+                  final count = products.length;
+
                   final imageUrl = products.isNotEmpty
                       ? products.first.imageUrl
                       : '';
 
+                  // Temporary product for readable category display name
                   final tempProduct = Product(
                     id: '',
+                    sku: '',
                     name: '',
                     description: '',
                     category: category,
-                    subType: null,
+                    subType: '',
                     price: 0,
                     imageUrl: imageUrl,
                     features: [],
@@ -1066,7 +1098,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                       _updateBreadcrumbPath(category: category, subType: null);
                     },
                   );
-                }),
+                }).toList(),
               ],
             ),
           ),
@@ -1128,158 +1160,158 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     );
   }
 
-  void _showSubcategoryFilter(BuildContext context) {
-    if (_selectedCategory == null) return;
+  // void _showSubcategoryFilter(BuildContext context) {
+  //   if (_selectedCategory == null) return;
 
-    final subTypes = _getSubTypesForCategory(_selectedCategory!);
+  //   final subTypes = _getSubTypesForCategory(_selectedCategory!);
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.85,
-              constraints: const BoxConstraints(maxWidth: 480),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ✳️ Title Row with Close Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Filter by Type',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.black54),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) {
+  //       return Center(
+  //         child: Material(
+  //           color: Colors.transparent,
+  //           child: Container(
+  //             width: MediaQuery.of(context).size.width * 0.85,
+  //             constraints: const BoxConstraints(maxWidth: 480),
+  //             padding: const EdgeInsets.all(24),
+  //             decoration: BoxDecoration(
+  //               color: Colors.white,
+  //               borderRadius: BorderRadius.circular(20),
+  //               boxShadow: [
+  //                 BoxShadow(
+  //                   color: Colors.black26,
+  //                   blurRadius: 20,
+  //                   offset: const Offset(0, 8),
+  //                 ),
+  //               ],
+  //             ),
+  //             child: Column(
+  //               mainAxisSize: MainAxisSize.min,
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 // ✳️ Title Row with Close Button
+  //                 Row(
+  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     Text(
+  //                       'Filter by Type',
+  //                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
+  //                         fontWeight: FontWeight.bold,
+  //                       ),
+  //                     ),
+  //                     IconButton(
+  //                       icon: const Icon(Icons.close, color: Colors.black54),
+  //                       onPressed: () => Navigator.pop(context),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 20),
 
-                  // ✳️ Subtype Grid (2 columns)
-                  SizedBox(
-                    height: 300,
-                    child: GridView.count(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 3.2, // wider chip layout
-                      shrinkWrap: true,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        // All Types chip
-                        ChoiceChip(
-                          label: const Text('All Types'),
-                          selected: _selectedSubType == null,
-                          onSelected: (selected) {
-                            _updateBreadcrumbPath(
-                              category: _selectedCategory,
-                              subType: null,
-                            );
-                            Navigator.pop(context);
-                          },
-                          selectedColor: const Color(0xFF4A306D),
-                          labelStyle: TextStyle(
-                            fontSize: 16,
-                            color: _selectedSubType == null
-                                ? Colors.white
-                                : Colors.black87,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                            side: BorderSide(
-                              color: _selectedSubType == null
-                                  ? const Color(0xFF4A306D)
-                                  : Colors.grey.shade300,
-                              width: 1.2,
-                            ),
-                          ),
-                          avatar: _selectedSubType == null
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 20,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
+  //                 // ✳️ Subtype Grid (2 columns)
+  //                 SizedBox(
+  //                   height: 300,
+  //                   child: GridView.count(
+  //                     crossAxisCount: 2,
+  //                     mainAxisSpacing: 12,
+  //                     crossAxisSpacing: 12,
+  //                     childAspectRatio: 3.2, // wider chip layout
+  //                     shrinkWrap: true,
+  //                     physics: const AlwaysScrollableScrollPhysics(),
+  //                     children: [
+  //                       // All Types chip
+  //                       ChoiceChip(
+  //                         label: const Text('All Types'),
+  //                         selected: _selectedSubType == null,
+  //                         onSelected: (selected) {
+  //                           _updateBreadcrumbPath(
+  //                             category: _selectedCategory,
+  //                             subType: null,
+  //                           );
+  //                           Navigator.pop(context);
+  //                         },
+  //                         selectedColor: const Color(0xFF4A306D),
+  //                         labelStyle: TextStyle(
+  //                           fontSize: 16,
+  //                           color: _selectedSubType == null
+  //                               ? Colors.white
+  //                               : Colors.black87,
+  //                           fontWeight: FontWeight.w600,
+  //                         ),
+  //                         padding: const EdgeInsets.symmetric(
+  //                           horizontal: 16,
+  //                           vertical: 10,
+  //                         ),
+  //                         shape: RoundedRectangleBorder(
+  //                           borderRadius: BorderRadius.circular(25),
+  //                           side: BorderSide(
+  //                             color: _selectedSubType == null
+  //                                 ? const Color(0xFF4A306D)
+  //                                 : Colors.grey.shade300,
+  //                             width: 1.2,
+  //                           ),
+  //                         ),
+  //                         avatar: _selectedSubType == null
+  //                             ? const Icon(
+  //                                 Icons.check,
+  //                                 size: 20,
+  //                                 color: Colors.white,
+  //                               )
+  //                             : null,
+  //                       ),
 
-                        // Other subtype chips
-                        ...subTypes.map((subType) {
-                          final selected = _selectedSubType == subType;
-                          return ChoiceChip(
-                            label: Text(
-                              _getSubTypeDisplayName(subType),
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: selected ? Colors.white : Colors.black87,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            selected: selected,
-                            onSelected: (value) {
-                              _updateBreadcrumbPath(
-                                category: _selectedCategory,
-                                subType: value ? subType : null,
-                              );
-                              Navigator.pop(context);
-                            },
-                            selectedColor: const Color(0xFF4A306D),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                              side: BorderSide(
-                                color: selected
-                                    ? const Color(0xFF4A306D)
-                                    : Colors.grey.shade300,
-                                width: 1.2,
-                              ),
-                            ),
-                            avatar: selected
-                                ? const Icon(
-                                    Icons.check,
-                                    size: 20,
-                                    color: Colors.white,
-                                  )
-                                : null,
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  //                       // Other subtype chips
+  //                       ...subTypes.map((subType) {
+  //                         final selected = _selectedSubType == subType;
+  //                         return ChoiceChip(
+  //                           label: Text(
+  //                             _getSubTypeDisplayName(subType),
+  //                             style: TextStyle(
+  //                               fontSize: 16,
+  //                               color: selected ? Colors.white : Colors.black87,
+  //                               fontWeight: FontWeight.w600,
+  //                             ),
+  //                           ),
+  //                           selected: selected,
+  //                           onSelected: (value) {
+  //                             _updateBreadcrumbPath(
+  //                               category: _selectedCategory,
+  //                               subType: value ? subType : null,
+  //                             );
+  //                             Navigator.pop(context);
+  //                           },
+  //                           selectedColor: const Color(0xFF4A306D),
+  //                           padding: const EdgeInsets.symmetric(
+  //                             horizontal: 16,
+  //                             vertical: 10,
+  //                           ),
+  //                           shape: RoundedRectangleBorder(
+  //                             borderRadius: BorderRadius.circular(25),
+  //                             side: BorderSide(
+  //                               color: selected
+  //                                   ? const Color(0xFF4A306D)
+  //                                   : Colors.grey.shade300,
+  //                               width: 1.2,
+  //                             ),
+  //                           ),
+  //                           avatar: selected
+  //                               ? const Icon(
+  //                                   Icons.check,
+  //                                   size: 20,
+  //                                   color: Colors.white,
+  //                                 )
+  //                               : null,
+  //                         );
+  //                       }),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 }

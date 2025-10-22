@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart'; // kept for optional future use
+// kept for optional future use
 import '../../models/product.dart';
 import '../../services/order_service.dart';
 import '../../utils/snackbar_helper.dart';
@@ -102,7 +102,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 tag: 'product_${p.id}',
                                 child: AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 250),
-                                  child: Image.asset(
+                                  child: Image.network(
                                     galleryImages[_currentImage],
                                     key: ValueKey<int>(_currentImage),
                                     width: imageSize,
@@ -174,7 +174,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             child: ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(6),
-                                              child: Image.asset(
+                                              child: Image.network(
                                                 img,
                                                 fit: BoxFit.cover,
                                                 width: thumbWidth,

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:medihub_tests/controllers/product_controller.dart';
+import 'package:medihub_tests/models/product.dart';
+import 'package:provider/provider.dart';
 import '../../services/order_service.dart';
 import '../../constants/app_constants.dart';
-import '../checkout/customer_info_screen.dart';
+import '../checkout/customer_checkout_screen.dart';
 import '../../widgets/suggestion_card.dart';
 
 class CartScreen extends StatefulWidget {
@@ -15,10 +18,18 @@ class _CartScreenState extends State<CartScreen> {
   final OrderService _orderService = OrderService();
 
   void _navigateToProduct(String productId) {
+    final productController = context.read<ProductController>();
+    final product = productController.products.firstWhere(
+      (p) => p.id == productId,
+      orElse: () => Product.empty(),
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Navigating to product ${AppConstants.getProductById(productId)?.name ?? productId}',
+          product.id.isNotEmpty
+              ? 'Navigating to product ${product.name}'
+              : 'Product $productId not found',
         ),
         duration: const Duration(milliseconds: 1000),
       ),
@@ -29,10 +40,13 @@ class _CartScreenState extends State<CartScreen> {
     final cartItems = _orderService.cartItems;
     if (cartItems.isEmpty) return const SizedBox.shrink();
 
+    final productController = context.watch<ProductController>();
+
     final Set<String> allSuggestionIds = {};
     final Map<String, String> suggestionIdToType = {};
 
     for (final item in cartItems) {
+      // Collect alternative product IDs
       for (final altId in item.product.alternativeProductIds) {
         if (!_orderService.isProductInCart(altId)) {
           allSuggestionIds.add(altId);
@@ -40,6 +54,7 @@ class _CartScreenState extends State<CartScreen> {
         }
       }
 
+      // Collect upgrade product IDs
       for (final upId in item.product.upgradeProductIds) {
         if (!_orderService.isProductInCart(upId)) {
           allSuggestionIds.add(upId);
@@ -50,8 +65,12 @@ class _CartScreenState extends State<CartScreen> {
 
     final List<Widget> suggestionCards = [];
     for (final id in allSuggestionIds) {
-      final product = AppConstants.getProductById(id);
-      if (product != null) {
+      final product = productController.products.firstWhere(
+        (p) => p.id == id,
+        orElse: () => Product.empty(),
+      );
+
+      if (product.id.isNotEmpty) {
         suggestionCards.add(
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
@@ -65,38 +84,28 @@ class _CartScreenState extends State<CartScreen> {
       }
     }
 
-    if (suggestionCards.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      width: double.infinity,
-      color: const Color(0xFFE9DBF0),
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'People also bought',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF4A306D),
+    return suggestionCards.isNotEmpty
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'You might also like',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 240,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(left: 24),
-              children: suggestionCards,
-            ),
-          ),
-        ],
-      ),
-    );
+              SizedBox(
+                height: 250,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: suggestionCards,
+                ),
+              ),
+            ],
+          )
+        : const SizedBox.shrink();
   }
 
   @override
@@ -233,7 +242,7 @@ class _CartScreenState extends State<CartScreen> {
                                 width: 80,
                                 height: 80,
                                 decoration: BoxDecoration(
-                                  color: item.product.color.withOpacity(0.1),
+                                  color: item.product.color?.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: item.product.imageUrl.isNotEmpty
@@ -474,14 +483,28 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                     ),
                   ),
+
+                  // In your cart_screen.dart, replace the checkout button's onPressed with this:
                   ElevatedButton(
                     onPressed: cartItems.isNotEmpty
                         ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const CustomerInfoScreen(),
+                            Navigator.of(context).push(
+                              PageRouteBuilder(
+                                opaque: false, // Makes background transparent
+                                barrierDismissible: true,
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) {
+                                      return const CustomerInfoScreen();
+                                    },
+                                transitionsBuilder:
+                                    (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      return child; // No additional transition needed, the CustomerInfoScreen has its own
+                                    },
                               ),
                             );
                           }
