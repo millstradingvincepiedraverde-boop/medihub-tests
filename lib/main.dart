@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import './screens/kiosk-main.dart';
-import './controllers/product_controller.dart'; // ✅ Import your controller
+import './controllers/product_controller.dart';
 
 // Helper function to play a light haptic tap
 void _playHapticFeedback() {
   HapticFeedback.lightImpact(); // subtle tactile response
 }
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Lock orientation to landscape
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
+  // 🔒 Lock orientation to portrait only
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
   ]);
 
-  // Hide system UI for kiosk mode
+  // 🧭 Hide system UI for kiosk-style fullscreen mode
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   // Optional: haptic tap on startup
@@ -26,11 +26,7 @@ void main() {
 
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) => ProductController(),
-        ), // ✅ add this
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => ProductController())],
       child: const WheelchairKioskApp(),
     ),
   );
@@ -49,11 +45,9 @@ class WheelchairKioskApp extends StatelessWidget {
         fontFamily: 'GT Walsheim Pro',
         colorSchemeSeed: Colors.blue,
         brightness: Brightness.light,
-
         splashColor: Colors.blue.withOpacity(0.4),
         highlightColor: Colors.blue.withOpacity(0.1),
         splashFactory: InkRipple.splashFactory,
-
         listTileTheme: const ListTileThemeData(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),

@@ -23,14 +23,14 @@ class SlideData {
 final List<SlideData> slides = [
   SlideData(
     imageUrl:
-        'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/HECWLCEQB2BL.png?v=1755583451',
+        'assets/images/wheelchairs/wheelchair-2.png',
     title: 'Wheelchairs',
     subtitle: 'We offer wide range of styles and sizes.',
     promoText: 'Delivered Today',
   ),
   SlideData(
     imageUrl:
-        'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/AGCMSCEMQA2BL.png?v=1755583451',
+        'assets/images/mobilityscooters/scooters-1.png',
     title: 'Mobility Scooters',
     subtitle: 'We offer wide range of styles and sizes.',
     promoText: 'Delivered Today',
@@ -148,8 +148,8 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SvgPicture.network(
-                  'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/logo.svg?v=1755583753',
+                SvgPicture.asset(
+                  'assets/images/medihub-logo.svg',
                   height: isMobile
                       ? 16
                       : isTablet
@@ -212,7 +212,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
         Positioned(
           right: isMobile ? size.width * 0.1 : size.width * 0.05,
           top: isMobile ? size.height * 0.45 : size.height * 0.25,
-          child: Image.network(
+          child: Image.asset(
             slide.imageUrl,
             width: imageWidth,
             fit: BoxFit.contain,

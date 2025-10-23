@@ -5,7 +5,6 @@ import '../../services/order_service.dart';
 import 'order_confirmation_screen.dart';
 import '../../controllers/postage_controller.dart';
 import '../../models/postage_rate.dart';
-import '../../services/postage_service.dart';
 
 class CustomerInfoScreen extends StatefulWidget {
   const CustomerInfoScreen({super.key});
@@ -46,14 +45,13 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
       duration: const Duration(milliseconds: 350),
     );
     _slideAnimation = Tween(
-      begin: const Offset(0.0, 1.0),
+      begin: const Offset(0, 1),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _fadeAnimation = Tween(
       begin: 0.0,
       end: 0.6,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
     _controller.forward();
   }
 
@@ -99,101 +97,32 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     }
   }
 
-  void _closeModal() async {
-    await _controller.reverse();
-    if (mounted) Navigator.pop(context);
-  }
-
   Future<void> _fetchPostageRates(String postcode) async {
     if (postcode.length < 4) return;
     setState(() => _isLoadingRates = true);
+    _postageRates.clear();
 
     try {
-      final sku = _orderService.cartItems.first.product.sku;
-      final qty = _orderService.cartItems.first.quantity;
-
-      final rates = await _postageController.fetchRates(sku, postcode, qty);
-
-      setState(() {
-        _postageRates = rates;
-        _isLoadingRates = false;
+      for (final item in _orderService.cartItems) {
+        final sku = item.product.sku;
+        final qty = item.quantity;
+        final rates = await _postageController.fetchRates(sku, postcode, qty);
         if (rates.isNotEmpty) {
-          _deliveryMethod = rates.first.service.toLowerCase();
+          _postageRates.addAll(rates);
         }
-      });
+      }
+
+      _postageRates.sort((a, b) => a.cost.compareTo(b.cost));
+      setState(() => _isLoadingRates = false);
     } catch (e) {
+      debugPrint('❌ Failed to fetch postage rates: $e');
       setState(() => _isLoadingRates = false);
     }
-  }
-
-  Widget _deliveryOption({
-    required String label,
-    required String subtitle,
-    required String value,
-    required String price,
-    required FontWeight fontWeight,
-  }) {
-    final isSelected = _deliveryMethod == value;
-    return GestureDetector(
-      onTap: () => setState(() => _deliveryMethod = value),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: isSelected ? const Color(0xFFE9D5F5) : Colors.white,
-          border: Border.all(
-            color: isSelected ? const Color(0xFF7B50C7) : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.circle_outlined,
-              color: isSelected ? const Color(0xFF7B50C7) : Colors.grey,
-              size: 24,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (subtitle.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Text(
-              price,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       hintText: label,
-      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -201,20 +130,13 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.grey.shade300),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF7B50C7), width: 2),
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 700;
     final cartItems = _orderService.cartItems;
     final total = _orderService.cartTotal;
 
@@ -225,7 +147,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
           FadeTransition(
             opacity: _fadeAnimation,
             child: GestureDetector(
-              onTap: _closeModal,
+              onTap: () => Navigator.pop(context),
               child: Container(color: Colors.black.withOpacity(0.5)),
             ),
           ),
@@ -235,7 +157,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
               alignment: Alignment.bottomCenter,
               child: Container(
                 width: double.infinity,
-                height: screenHeight * 0.85,
+                height: isMobile ? size.height * 0.95 : size.height * 0.85,
                 decoration: const BoxDecoration(
                   color: Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.only(
@@ -253,496 +175,77 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                 child: SafeArea(
                   child: Column(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16, bottom: 8),
-                        child: Container(
-                          width: 50,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade400,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
+                      Container(
+                        width: 50,
+                        height: 5,
+                        margin: const EdgeInsets.only(top: 10, bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade400,
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               "Checkout",
                               style: TextStyle(
-                                fontSize: 36,
+                                fontSize: isMobile ? 26 : 36,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                             IconButton(
-                              onPressed: _closeModal,
+                              onPressed: () => Navigator.pop(context),
                               icon: const Icon(Icons.close, size: 28),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
 
+                      // Responsive layout
                       Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left side - Form
-                            Expanded(
-                              flex: 3,
-                              child: SingleChildScrollView(
-                                padding: const EdgeInsets.all(24),
-                                child: Form(
-                                  key: _formKey,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: isMobile
+                                ? Column(
                                     children: [
-                                      const Text(
-                                        "Your Details",
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: TextFormField(
-                                              controller: _firstNameController,
-                                              style: const TextStyle(
-                                                fontSize: 15,
-                                              ),
-                                              decoration: _inputDecoration(
-                                                "First Name",
-                                              ),
-                                              validator: (value) =>
-                                                  value == null || value.isEmpty
-                                                  ? "Required"
-                                                  : null,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: TextFormField(
-                                              controller: _lastNameController,
-                                              style: const TextStyle(
-                                                fontSize: 15,
-                                              ),
-                                              decoration: _inputDecoration(
-                                                "Last Name",
-                                              ),
-                                              validator: (value) =>
-                                                  value == null || value.isEmpty
-                                                  ? "Required"
-                                                  : null,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 14),
-
-                                      TextFormField(
-                                        controller: _emailController,
-                                        keyboardType:
-                                            TextInputType.emailAddress,
-                                        style: const TextStyle(fontSize: 15),
-                                        decoration: _inputDecoration(
-                                          "Email Address",
-                                        ),
-                                        validator: (value) =>
-                                            value == null || value.isEmpty
-                                            ? "Required"
-                                            : null,
-                                      ),
-                                      const SizedBox(height: 14),
-
-                                      TextFormField(
-                                        controller: _phoneController,
-                                        keyboardType: TextInputType.phone,
-                                        style: const TextStyle(fontSize: 15),
-                                        decoration: _inputDecoration(
-                                          "Phone Number",
-                                        ),
-                                        validator: (value) =>
-                                            value == null || value.isEmpty
-                                            ? "Required"
-                                            : null,
-                                      ),
-                                      const SizedBox(height: 14),
-
-                                      TextFormField(
-                                        controller: _addressController,
-                                        style: const TextStyle(fontSize: 15),
-                                        decoration: _inputDecoration(
-                                          "Shipping Address",
-                                        ),
-                                        validator: (value) =>
-                                            value == null || value.isEmpty
-                                            ? "Required"
-                                            : null,
-                                      ),
-                                      const SizedBox(height: 14),
-
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            flex: 2,
-                                            child: TextFormField(
-                                              controller: _aptController,
-                                              style: const TextStyle(
-                                                fontSize: 15,
-                                              ),
-                                              decoration: _inputDecoration(
-                                                "Apartment",
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: TextFormField(
-                                              controller: _postcodeController,
-                                              style: const TextStyle(
-                                                fontSize: 15,
-                                              ),
-                                              decoration: _inputDecoration(
-                                                "Post Code",
-                                              ),
-                                              keyboardType:
-                                                  TextInputType.number,
-                                              onChanged: _fetchPostageRates,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 14),
-
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: TextFormField(
-                                              controller: _cityController,
-                                              style: const TextStyle(
-                                                fontSize: 15,
-                                              ),
-                                              decoration: _inputDecoration(
-                                                "City",
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child:
-                                                DropdownButtonFormField<String>(
-                                                  decoration: _inputDecoration(
-                                                    "Select State",
-                                                  ),
-                                                  items:
-                                                      [
-                                                            'NSW',
-                                                            'VIC',
-                                                            'QLD',
-                                                            'WA',
-                                                            'SA',
-                                                            'TAS',
-                                                            'ACT',
-                                                            'NT',
-                                                          ]
-                                                          .map(
-                                                            (state) =>
-                                                                DropdownMenuItem(
-                                                                  value: state,
-                                                                  child: Text(
-                                                                    state,
-                                                                  ),
-                                                                ),
-                                                          )
-                                                          .toList(),
-                                                  onChanged: (value) {
-                                                    _stateController.text =
-                                                        value ?? '';
-                                                  },
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 32),
-
-                                      const Text(
-                                        "Delivery Options",
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      if (_isLoadingRates)
-                                        const Center(
-                                          child: CircularProgressIndicator(),
-                                        )
-                                      else if (_postageRates.isNotEmpty)
-                                        Column(
-                                          children: _postageRates.map((rate) {
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 12,
-                                              ),
-                                              child: _deliveryOption(
-                                                label: rate.service,
-                                                subtitle: rate.eta.isNotEmpty
-                                                    ? 'ETA: ${rate.eta}'
-                                                    : '',
-                                                value: rate.service
-                                                    .toLowerCase(),
-                                                price:
-                                                    '\$${rate.cost.toStringAsFixed(2)}',
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            );
-                                          }).toList(),
-                                        )
-                                      else
-                                        const Text(
-                                          'Enter a postcode to see delivery options',
-                                          style: TextStyle(color: Colors.grey),
-                                        ),
-
-                                      const SizedBox(height: 32),
-
-                                      SizedBox(
-                                        width: double.infinity,
-                                        height: 58,
-                                        child: ElevatedButton(
-                                          onPressed: _submitOrder,
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(
-                                              0xFF4A306D,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              const Text(
-                                                "Pay now on terminal",
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 16),
-                                              Row(
-                                                children: [
-                                                  SvgPicture.asset(
-                                                    'assets/icons/visa-icon.svg',
-                                                    height: 32,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  SvgPicture.asset(
-                                                    'assets/icons/mastercard-icon.svg',
-                                                    height: 32,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  SvgPicture.asset(
-                                                    'assets/icons/amex-icon.svg',
-                                                    height: 32,
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        height: 58,
-                                        child: OutlinedButton(
-                                          onPressed: () {},
-                                          style: OutlinedButton.styleFrom(
-                                            side: const BorderSide(
-                                              color: Color(0xFF7B50C7),
-                                              width: 2,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              const Text(
-                                                "Pay later with",
-                                                style: TextStyle(
-                                                  color: Color(0xFF4A306D),
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Image.asset(
-                                                'assets/icons/ndis-icon.png',
-                                                height: 28,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Right side summary
-                            Padding(
-                              padding: const EdgeInsets.only(top: 50.0),
-                              child: Container(
-                                width: 350,
-                                color: Colors.white,
-                                child: SingleChildScrollView(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        "Summary",
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
+                                      _buildFormSection(isMobile),
                                       const SizedBox(height: 20),
-
-                                      ...cartItems.map(
-                                        (item) => Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 16,
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  '${item.product.name}...',
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              Text(
-                                                '\$${item.totalPrice.toStringAsFixed(0)}',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                      _buildSummarySection(
+                                        cartItems,
+                                        total,
+                                        isMobile,
+                                        _postageRates,
+                                        _deliveryMethod,
                                       ),
-
-                                      const SizedBox(height: 12),
-                                      const Divider(),
-                                      const SizedBox(height: 12),
-
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text('Subtotal'),
-                                          Text('\$${total.toStringAsFixed(2)}'),
-                                        ],
+                                    ],
+                                  )
+                                : Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        flex: 3,
+                                        child: _buildFormSection(isMobile),
                                       ),
-                                      const SizedBox(height: 12),
-
-                                      const Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text('Shipping'),
-                                          Text(
-                                            'FREE',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 16),
-                                      const Divider(thickness: 2),
-                                      const SizedBox(height: 16),
-
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text(
-                                            'Total',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            '\$${total.toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 24),
-
+                                      const SizedBox(width: 20),
                                       SizedBox(
-                                        width: double.infinity,
-                                        child: OutlinedButton.icon(
-                                          onPressed: () {
-                                            setState(() {
-                                              _controller.reverse();
-                                              Navigator.pop(context);
-                                            });
-                                          },
-                                          style: OutlinedButton.styleFrom(
-                                            side: BorderSide(
-                                              color: Colors.grey.shade300,
-                                            ),
-                                          ),
-                                          icon: const Icon(
-                                            Icons.keyboard_backspace_outlined,
-                                          ),
-                                          label: const Text(
-                                            "Return to Cart",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
+                                        width: 350,
+                                        child: _buildSummarySection(
+                                          cartItems,
+                                          total,
+                                          isMobile,
+                                          _postageRates,
+                                          _deliveryMethod,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ],
@@ -750,6 +253,238 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Components below ---
+  Widget _buildFormSection(bool isMobile) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Your Details",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _firstNameController,
+                  decoration: _inputDecoration("First Name"),
+                  validator: (v) => v!.isEmpty ? "Required" : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _lastNameController,
+                  decoration: _inputDecoration("Last Name"),
+                  validator: (v) => v!.isEmpty ? "Required" : null,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: _inputDecoration("Email Address"),
+            validator: (v) => v!.isEmpty ? "Required" : null,
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: _inputDecoration("Phone Number"),
+            validator: (v) => v!.isEmpty ? "Required" : null,
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: _addressController,
+            decoration: _inputDecoration("Shipping Address"),
+            validator: (v) => v!.isEmpty ? "Required" : null,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  controller: _aptController,
+                  decoration: _inputDecoration("Apartment"),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _postcodeController,
+                  keyboardType: TextInputType.number,
+                  decoration: _inputDecoration("Post Code"),
+                  onChanged: _fetchPostageRates,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _isLoadingRates
+              ? const Center(child: CircularProgressIndicator())
+              : _postageRates.isEmpty
+              ? const Text(
+                  "Enter postcode to view delivery options",
+                  style: TextStyle(color: Colors.grey),
+                )
+              : Column(
+                  children: _postageRates
+                      .map(
+                        (r) => ListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: _deliveryMethod == r.service
+                                  ? Colors.deepPurple
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          title: Text(r.service),
+                          subtitle: r.eta.isNotEmpty
+                              ? Text("ETA: ${r.eta}")
+                              : null,
+                          trailing: Text("\$${r.cost.toStringAsFixed(2)}"),
+                          onTap: () =>
+                              setState(() => _deliveryMethod = r.service),
+                        ),
+                      )
+                      .toList(),
+                ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton(
+              onPressed: _submitOrder,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A306D),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                "Pay Now on Terminal",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummarySection(
+    List cartItems,
+    double total,
+    bool isMobile,
+    List<PostageRate> postageRates,
+    String selectedDeliveryMethod,
+  ) {
+    // Find the selected postage rate from the list
+    final selectedRate = postageRates.firstWhere(
+      (r) => r.service.toLowerCase() == selectedDeliveryMethod.toLowerCase(),
+      orElse: () => PostageRate(
+        service: 'Standard',
+        eta: '',
+        cost: 0.0,
+        code: '',
+        sku: '',
+      ),
+    );
+
+    final shippingCost = selectedRate.cost;
+    final grandTotal = total + shippingCost;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Summary",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+
+          // Cart Items
+          ...cartItems.map((item) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.product.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text('\$${item.totalPrice.toStringAsFixed(2)}'),
+                ],
+              ),
+            );
+          }),
+
+          const Divider(),
+
+          // Subtotal
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Subtotal"),
+              Text('\$${total.toStringAsFixed(2)}'),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Shipping (dynamic)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Shipping"),
+              Text(
+                shippingCost == 0
+                    ? "FREE"
+                    : "\$${shippingCost.toStringAsFixed(2)}",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+
+          const Divider(thickness: 1.5),
+
+          // Total
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Total",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '\$${grandTotal.toStringAsFixed(2)}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ],
       ),

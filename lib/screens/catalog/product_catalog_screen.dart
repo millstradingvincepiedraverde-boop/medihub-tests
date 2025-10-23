@@ -9,8 +9,8 @@ import '../../constants/app_constants.dart';
 import '../../models/product.dart';
 import '../../services/order_service.dart';
 import '../../widgets/product_card.dart';
-import '../../utils/snackbar_helper.dart';
-import '../cart/cart_screen.dart';
+// import '../../utils/snackbar_helper.dart';
+// import '../cart/cart_screen.dart';
 import 'product_detail_screen.dart';
 import '../../widgets/bottom_cart_button.dart';
 import 'package:provider/provider.dart';
@@ -55,6 +55,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     // ✅ Also fetch your products here if not already done
     Future.microtask(() {
       context.read<ProductController>().fetchProducts(forceRefresh: true);
+
+      _startInactivityTimer();
     });
   }
 
@@ -69,6 +71,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   // 🕒 TIMER LOGIC
   void _startInactivityTimer() {
     _cancelInactivityTimer();
+    print('⏱️ Timer started (${_inactivityTimeout.inSeconds}s)');
     _inactivityTimer = Timer(_inactivityTimeout, _showInactivityDialog);
   }
 
@@ -81,12 +84,13 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   }
 
   void _onUserInteraction() {
+    print('👆 Interaction detected');
     _resetInactivityTimer();
   }
 
   void _showInactivityDialog() {
     if (!mounted) return;
-
+    print('⚠️ Timeout reached, showing dialog');
     int countdown = 30;
     _dialogTimer?.cancel();
 
@@ -510,7 +514,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 ),
               ),
               onPressed: () {
-               // _showSubcategoryFilter(context);
+                // _showSubcategoryFilter(context);
               },
             ),
         ],
@@ -519,100 +523,100 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   }
 
   // NEW HERO BANNER WIDGET
-  Widget _buildHeroBanner(double screenWidth) {
-    // Determine height and padding responsively
-    final bannerHeight = screenWidth * 0.35 > 250 ? 250.0 : screenWidth * 0.35;
-    final padding = screenWidth > _kTabletBreakpoint ? 24.0 : 16.0;
+  // Widget _buildHeroBanner(double screenWidth) {
+  //   // Determine height and padding responsively
+  //   final bannerHeight = screenWidth * 0.35 > 250 ? 250.0 : screenWidth * 0.35;
+  //   final padding = screenWidth > _kTabletBreakpoint ? 24.0 : 16.0;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
-      child: Container(
-        height: bannerHeight,
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 71, 3, 88), // Medihub main color
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-          // Use a subtle gradient for visual appeal
-          gradient: LinearGradient(
-            colors: [
-              const Color.fromARGB(255, 100, 50, 150).withOpacity(0.9),
-              const Color.fromARGB(255, 71, 3, 88),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Background graphic (subtle icon)
-            Positioned(
-              right: -50,
-              bottom: -50,
-              child: Icon(
-                Icons.healing_outlined,
-                size: bannerHeight * 1.1,
-                color: Colors.white.withOpacity(0.1),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(padding * 1.5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Featured Aid: The Ergonomic Walker',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24, // Clear and large
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Experience enhanced mobility with our top-rated lightweight aluminum walker. Limited-time offer: 20% off all mobility aids!',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Action: Navigate to the featured product or sale category (e.g., Mobility Scooters)
-                      // _updateBreadcrumbPath(
-                      //   category: ProductCategory.mobilityScooters,
-                      //   subType: null,
-                      // );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: const Color.fromARGB(255, 71, 3, 88),
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    child: const Text('Shop the Offer Now'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  //   return Padding(
+  //     padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
+  //     child: Container(
+  //       height: bannerHeight,
+  //       decoration: BoxDecoration(
+  //         color: const Color.fromARGB(255, 71, 3, 88), // Medihub main color
+  //         borderRadius: BorderRadius.circular(20),
+  //         boxShadow: [
+  //           BoxShadow(
+  //             color: Colors.black.withOpacity(0.15),
+  //             blurRadius: 15,
+  //             offset: const Offset(0, 8),
+  //           ),
+  //         ],
+  //         // Use a subtle gradient for visual appeal
+  //         gradient: LinearGradient(
+  //           colors: [
+  //             const Color.fromARGB(255, 100, 50, 150).withOpacity(0.9),
+  //             const Color.fromARGB(255, 71, 3, 88),
+  //           ],
+  //           begin: Alignment.topLeft,
+  //           end: Alignment.bottomRight,
+  //         ),
+  //       ),
+  //       child: Stack(
+  //         children: [
+  //           // Background graphic (subtle icon)
+  //           Positioned(
+  //             right: -50,
+  //             bottom: -50,
+  //             child: Icon(
+  //               Icons.healing_outlined,
+  //               size: bannerHeight * 1.1,
+  //               color: Colors.white.withOpacity(0.1),
+  //             ),
+  //           ),
+  //           Padding(
+  //             padding: EdgeInsets.all(padding * 1.5),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               mainAxisAlignment: MainAxisAlignment.center,
+  //               children: [
+  //                 const Text(
+  //                   'Featured Aid: The Ergonomic Walker',
+  //                   style: TextStyle(
+  //                     color: Colors.white,
+  //                     fontSize: 24, // Clear and large
+  //                     fontWeight: FontWeight.w900,
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 8),
+  //                 const Text(
+  //                   'Experience enhanced mobility with our top-rated lightweight aluminum walker. Limited-time offer: 20% off all mobility aids!',
+  //                   style: TextStyle(color: Colors.white70, fontSize: 16),
+  //                 ),
+  //                 const SizedBox(height: 16),
+  //                 ElevatedButton(
+  //                   onPressed: () {
+  //                     // Action: Navigate to the featured product or sale category (e.g., Mobility Scooters)
+  //                     // _updateBreadcrumbPath(
+  //                     //   category: ProductCategory.mobilityScooters,
+  //                     //   subType: null,
+  //                     // );
+  //                   },
+  //                   style: ElevatedButton.styleFrom(
+  //                     foregroundColor: const Color.fromARGB(255, 71, 3, 88),
+  //                     backgroundColor: Colors.white,
+  //                     padding: const EdgeInsets.symmetric(
+  //                       horizontal: 24,
+  //                       vertical: 14,
+  //                     ),
+  //                     shape: RoundedRectangleBorder(
+  //                       borderRadius: BorderRadius.circular(12),
+  //                     ),
+  //                     textStyle: const TextStyle(
+  //                       fontWeight: FontWeight.bold,
+  //                       fontSize: 16,
+  //                     ),
+  //                   ),
+  //                   child: const Text('Shop the Offer Now'),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildMainProductArea(double screenWidth) {
     // Determine crossAxisCount based on screen width
@@ -625,168 +629,173 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       crossAxisCount = 2; // Mobile
     }
 
-    // Determine if we should show a narrower detail screen based on breakpoint
+    // Detect content layout type
     final bool isContentNarrow = screenWidth >= _kTabletBreakpoint;
 
-    return Column(
-      children: [
-        // 🧭 Breadcrumb
-        _buildBreadcrumb(),
+    // 🧠 Always start/reset inactivity timer when this widget rebuilds
+    // (especially when products or search results change)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startInactivityTimer();
+    });
 
-        // 🏞 Hero Banner (only on home view)
-        if (_selectedCategory == null && _searchQuery.isEmpty)
-          _buildHeroBanner(screenWidth),
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _onUserInteraction(),
+      onPointerMove: (_) => _onUserInteraction(),
+      onPointerHover: (_) => _onUserInteraction(),
+      child: Column(
+        children: [
+          // 🧭 Breadcrumb
+          _buildBreadcrumb(),
 
-        // 🔍 Search & Filter Bar
-        _buildSearchAndFilterBar(),
-
-        // Header (placeholder for sort/view toggles)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(
-              bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+          _buildSearchAndFilterBar(),
+          // 🏞 Hero Banner (only on home view)
+          if (_selectedCategory == null && _searchQuery.isEmpty)
+            //_buildHeroBanner(screenWidth),
+            // 🔍 Search & Filter Bar (always visible, even when 1 product)
+            // 🔲 Optional Header placeholder for sorting controls
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // reserved for future UI controls
+                ],
+              ),
             ),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // reserved for future UI controls
-            ],
-          ),
-        ),
 
-        // 🛒 Product Grid
-        Expanded(
-          child: _filteredProducts.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        size: 80,
-                        color: Colors.grey.shade300,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No products found',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey.shade600,
+          // 🛒 Product Grid / Empty State
+          Expanded(
+            child: _filteredProducts.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 80,
+                          color: Colors.grey.shade300,
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              : GridView.builder(
-                  // ✅ Reduced outer padding for tighter layout
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No products found',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.82,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: _filteredProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = _filteredProducts[index];
+                      return ProductCard(
+                        product: product,
+                        onTap: () {
+                          // 🧭 Stop timer while viewing product detail
+                          _cancelInactivityTimer();
 
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: 0.82, // slightly taller cards
-                    crossAxisSpacing: 12, // reduced horizontal gap
-                    mainAxisSpacing: 12, // reduced vertical gap
-                  ),
-
-                  itemCount: _filteredProducts.length,
-                  itemBuilder: (context, index) {
-                    final product = _filteredProducts[index];
-                    return ProductCard(
-                      product: product,
-                      onTap: () {
-                        // Custom full-width bottom modal
-                        Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                            opaque: false,
-                            transitionDuration: const Duration(
-                              milliseconds: 450,
-                            ),
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) {
-                                  const begin = Offset(0.0, 1.0);
-                                  const end = Offset.zero;
-                                  final slideTween =
-                                      Tween(begin: begin, end: end).chain(
-                                        CurveTween(curve: Curves.easeOutCubic),
-                                      );
-
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: Stack(
-                                      children: [
-                                        // Tap outside to dismiss
-                                        Positioned.fill(
-                                          child: GestureDetector(
-                                            onTap: () => Navigator.pop(context),
-                                            behavior: HitTestBehavior.opaque,
-                                            child: Container(
-                                              color: Colors.black.withOpacity(
-                                                0.4,
-                                              ),
-                                            ),
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              opaque: false,
+                              transitionDuration: const Duration(
+                                milliseconds: 450,
+                              ),
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) {
+                                    const begin = Offset(0.0, 1.0);
+                                    const end = Offset.zero;
+                                    final slideTween =
+                                        Tween(begin: begin, end: end).chain(
+                                          CurveTween(
+                                            curve: Curves.easeOutCubic,
                                           ),
-                                        ),
+                                        );
 
-                                        // Bottom Sheet
-                                        Align(
-                                          alignment: Alignment.bottomCenter,
-                                          child: SlideTransition(
-                                            position: animation.drive(
-                                              slideTween,
-                                            ),
-                                            child: FractionallySizedBox(
-                                              widthFactor: 1.0,
-                                              heightFactor: 0.85,
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    const BorderRadius.vertical(
-                                                      top: Radius.circular(20),
-                                                      bottom: Radius.zero,
-                                                    ),
-                                                child: ProductDetailScreen(
-                                                  product: product,
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: Stack(
+                                        children: [
+                                          // Tap outside to dismiss
+                                          Positioned.fill(
+                                            child: GestureDetector(
+                                              onTap: () =>
+                                                  Navigator.pop(context),
+                                              behavior: HitTestBehavior.opaque,
+                                              child: Container(
+                                                color: Colors.black.withOpacity(
+                                                  0.4,
                                                 ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                            transitionsBuilder:
-                                (
-                                  context,
-                                  animation,
-                                  secondaryAnimation,
-                                  child,
-                                ) => child,
-                          ),
-                        );
-                      },
-                      // Uncomment to re-enable cart
-                      // onAddToCart: () {
-                      //   setState(() {
-                      //     _orderService.addToCart(product);
-                      //   });
-                      //   SnackbarHelper.showSnackBar(
-                      //     context,
-                      //     message: '${product.name} added to cart',
-                      //     behavior: SnackBarBehavior.floating,
-                      //   );
-                      // },
-                    );
-                  },
-                ),
-        ),
-      ],
+
+                                          // Bottom Sheet
+                                          Align(
+                                            alignment: Alignment.bottomCenter,
+                                            child: SlideTransition(
+                                              position: animation.drive(
+                                                slideTween,
+                                              ),
+                                              child: FractionallySizedBox(
+                                                widthFactor: 1.0,
+                                                heightFactor: 0.85,
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      const BorderRadius.vertical(
+                                                        top: Radius.circular(
+                                                          20,
+                                                        ),
+                                                      ),
+                                                  child: ProductDetailScreen(
+                                                    product: product,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) => child,
+                            ),
+                          ).then((_) {
+                            // 🕒 Restart timer once user returns
+                            _resetInactivityTimer();
+                          });
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -795,31 +804,38 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth >= _kTabletBreakpoint;
 
-    return Scaffold(
-      body: isLargeScreen
-          ? Row(
-              // === Desktop/Tablet Layout ===
-              children: [
-                _buildSidebar(),
-                const VerticalDivider(width: 1),
-                Expanded(child: _buildMainProductArea(screenWidth)),
-              ],
-            )
-          : Column(
-              // === Mobile Layout ===
-              children: [
-                _buildMobileCategoryChips(),
-                Expanded(child: _buildMainProductArea(screenWidth)),
-              ],
-            ),
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      // 🧠 Detect all user interactions (tap, scroll, drag, etc.)
+      onPointerDown: (_) => _onUserInteraction(),
+      onPointerMove: (_) => _onUserInteraction(),
+      onPointerHover: (_) => _onUserInteraction(),
+      child: Scaffold(
+        body: isLargeScreen
+            ? Row(
+                // === Desktop / Tablet Layout ===
+                children: [
+                  _buildSidebar(),
+                  const VerticalDivider(width: 1),
+                  Expanded(child: _buildMainProductArea(screenWidth)),
+                ],
+              )
+            : Column(
+                // === Mobile Layout ===
+                children: [
+                  _buildMobileCategoryChips(),
+                  Expanded(child: _buildMainProductArea(screenWidth)),
+                ],
+              ),
 
-      // === Bottom area with cart button and footer ===
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          BottomCartButton(key: ValueKey(_orderService.cartItemCount)),
-          const FooterWidget(), // ⬅️ smaller + responsive footer below cart
-        ],
+        // === Bottom area with cart button and footer ===
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            BottomCartButton(key: ValueKey(_orderService.cartItemCount)),
+            const FooterWidget(), // responsive footer
+          ],
+        ),
       ),
     );
   }
@@ -1039,8 +1055,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(color: Colors.white),
-            child: SvgPicture.network(
-              'https://cdn.shopify.com/s/files/1/0698/0822/6356/files/logo.svg?v=1755583753',
+            child: SvgPicture.asset(
+              'assets/images/medihub-logo.svg',
               height: 40,
               fit: BoxFit.contain,
             ),

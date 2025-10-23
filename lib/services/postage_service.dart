@@ -1,88 +1,169 @@
-// lib/services/postage_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/postage_rate.dart';
 
 class PostageService {
-  // Use the API base / full URL you provided
-  // Example: https://api.millsbrands.com.au/api/v1/postage-calculator?sku=...&zip=...&qty=...&services=all
-  final String _baseUrl =
+  static const String _baseUrl =
       'https://api.millsbrands.com.au/api/v1/postage-calculator';
 
+  /// ✅ Fetch all postage rates from Mills Brands API
   Future<List<PostageRate>> fetchPostageRates({
     required String sku,
     required String zip,
     required int qty,
-    String services = 'all',
-    Map<String, String>? extraHeaders,
   }) async {
-    final uri = Uri.parse(_baseUrl).replace(
-      queryParameters: {
-        'sku': sku,
-        'zip': zip,
-        'qty': qty.toString(),
-        'services': services,
-      },
-    );
+    final uri = Uri.parse('$_baseUrl?sku=$sku&zip=$zip&qty=$qty&services=all');
+    print('🌐 [PostageService] Fetching postage rates from: $uri');
 
-    final headers = <String, String>{
-      'Accept': 'application/json',
-      if (extraHeaders != null) ...extraHeaders,
-    };
+    try {
+      final response = await http.get(uri);
+      print('📦 [PostageService] Response status: ${response.statusCode}');
 
-    final resp = await http.get(uri, headers: headers);
+      if (response.statusCode != 200) {
+        print(
+          '❌ [PostageService] Failed to fetch rates. Body: ${response.body}',
+        );
+        throw Exception('Failed to fetch postage rates');
+      }
 
-    if (resp.statusCode != 200) {
-      throw Exception('Failed to fetch postage rates (${resp.statusCode})');
-    }
+      final body = jsonDecode(response.body);
+      print('✅ [PostageService] Response parsed successfully.');
 
-    final Map<String, dynamic> body =
-        json.decode(resp.body) as Map<String, dynamic>;
+      final onDemand = body['onDemand'] as List? ?? [];
+      final postage =
+          double.tryParse(body['postage']?.toString() ?? '0') ?? 0.0;
 
-    // Try common response shapes:
-    // 1) { "data": [ {...}, {...} ] }
-    // 2) { "rates": [ {...} ] }
-    // 3) direct list: [ {...}, {...} ]
-    List<dynamic> list = [];
+      print('📊 [PostageService] Found ${onDemand.length} on-demand rate(s)');
 
-    if (body.containsKey('data') && body['data'] is List) {
-      list = body['data'] as List<dynamic>;
-    } else if (body.containsKey('rates') && body['rates'] is List) {
-      list = body['rates'] as List<dynamic>;
-    } else {
-      // attempt to find the first list inside the response
-      final candidate = body.values.firstWhere(
-        (v) => v is List,
-        orElse: () => null,
-      );
-      if (candidate is List) list = candidate;
-    }
+      final rates = onDemand.map((rate) {
+        return PostageRate.fromJson(rate, sku: sku);
+      }).toList();
 
-    // If still empty and root JSON is a list (some APIs), handle it
-    if (list.isEmpty) {
-      try {
-        final decoded = json.decode(resp.body);
-        if (decoded is List) list = decoded;
-      } catch (_) {}
-    }
-
-    // Map to PostageRate defensively
-    final rates = list.map<PostageRate>((item) {
-      if (item is Map<String, dynamic>) {
-        return PostageRate.fromJson(item);
-      } else if (item is Map) {
-        return PostageRate.fromJson(Map<String, dynamic>.from(item));
-      } else {
-        // fallback: create an "unknown" rate
-        return PostageRate(
-          service: item.toString(),
-          cost: 0.0,
-          eta: '',
-          code: '',
+      // If no on-demand rates exist, return a basic postage rate
+      if (rates.isEmpty) {
+        rates.add(
+          PostageRate(
+            service: 'Standard Delivery',
+            cost: postage,
+            sku: sku,
+            eta: 'N/A',
+            code: '',
+          ),
         );
       }
-    }).toList();
 
-    return rates;
+      return rates;
+    } catch (e) {
+      print('🚨 [PostageService] Error: $e');
+      rethrow;
+    }
+  }
+
+  /// ✅ Compute Shopify-like rates (same logic as calculateShipping)
+  Future<Map<String, dynamic>> calculateShipping(
+    Map<String, dynamic> body,
+  ) async {
+    print("🚚 [PostageService] Calculate Shipping Called");
+
+    final destination = body['rate']?['destination'] ?? {};
+    final items = List<Map<String, dynamic>>.from(body['rate']?['items'] ?? []);
+    final postalCode = destination['postal_code']?.toString() ?? '';
+
+    double totalShippingCost = 0;
+    final Map<String, Map<String, dynamic>> onDemandTotals = {};
+    bool allItemsHaveOnDemand = true;
+
+    int toCents(num n) => (n * 100).round();
+
+    for (final item in items) {
+      final sku = item['sku']?.toString() ?? '';
+      final quantity = int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
+
+      try {
+        final rates = await fetchPostageRates(
+          sku: sku,
+          zip: postalCode,
+          qty: quantity,
+        );
+
+        // Standard postage
+        final base = rates.isNotEmpty ? rates.first.cost : 0;
+        totalShippingCost += base;
+
+        // On-demand aggregation
+        if (rates.isEmpty || rates.first.service == 'Standard Delivery') {
+          allItemsHaveOnDemand = false;
+        } else {
+          for (final rate in rates) {
+            final label = rate.service.trim();
+            final internal = label.toLowerCase().replaceAll(' ', '_');
+            if (onDemandTotals.containsKey(internal)) {
+              onDemandTotals[internal]!['total'] += rate.cost;
+            } else {
+              onDemandTotals[internal] = {'label': label, 'total': rate.cost};
+            }
+          }
+        }
+      } catch (e) {
+        print("⚠️ [PostageService] Error fetching shipping for $sku: $e");
+        allItemsHaveOnDemand = false;
+        continue;
+      }
+    }
+
+    final List<Map<String, dynamic>> ratesResult = [];
+
+    if (allItemsHaveOnDemand && onDemandTotals.isNotEmpty) {
+      // ✅ All items have on-demand → show free on-demand options
+      for (final entry in onDemandTotals.entries) {
+        ratesResult.add({
+          'service_name': entry.value['label'],
+          'service_code': entry.key,
+          'total_price': 0,
+          'currency': 'AUD',
+        });
+      }
+    } else {
+      // ❌ Some items lack on-demand → show standard delivery
+      ratesResult.add({
+        'service_name': 'Standard Delivery',
+        'service_code': 'mills_shipping',
+        'total_price': toCents(totalShippingCost),
+        'currency': 'AUD',
+      });
+    }
+
+    return {'rates': ratesResult};
+  }
+
+  /// ✅ Simplified function to get cheapest postage cost
+  Future<double> getPostageCost({
+    required String sku,
+    required String zip,
+    required int qty,
+  }) async {
+    print(
+      '🔍 [PostageService] Getting postage cost for SKU: $sku ZIP: $zip QTY: $qty',
+    );
+
+    try {
+      final rates = await fetchPostageRates(sku: sku, zip: zip, qty: qty);
+
+      if (rates.isEmpty) {
+        print('⚠️ [PostageService] No postage rates found — defaulting to 0.0');
+        return 0.0;
+      }
+
+      rates.sort((a, b) => a.cost.compareTo(b.cost));
+      final lowest = rates.first;
+
+      print(
+        '💰 [PostageService] Selected cheapest rate: ${lowest.service} — \$${lowest.cost}',
+      );
+      return lowest.cost;
+    } catch (e) {
+      print('🚨 [PostageService] Error getting postage cost: $e');
+      return 0.0;
+    }
   }
 }
