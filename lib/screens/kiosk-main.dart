@@ -22,15 +22,19 @@ class SlideData {
 // --- Slides ---
 final List<SlideData> slides = [
   SlideData(
-    imageUrl:
-        'assets/images/wheelchairs/wheelchair-2.png',
+    imageUrl: 'images/splash_1.png',
     title: 'Wheelchairs',
     subtitle: 'We offer wide range of styles and sizes.',
     promoText: 'Delivered Today',
   ),
   SlideData(
-    imageUrl:
-        'assets/images/mobilityscooters/scooters-1.png',
+    imageUrl: 'images/splash_2.png',
+    title: 'Mobility Scooters',
+    subtitle: 'We offer wide range of styles and sizes.',
+    promoText: 'Delivered Today',
+  ),
+  SlideData(
+    imageUrl: 'images/splash_3.png',
     title: 'Mobility Scooters',
     subtitle: 'We offer wide range of styles and sizes.',
     promoText: 'Delivered Today',
@@ -125,11 +129,12 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
         ? size.width * 0.5
         : size.width * 0.4;
 
+    // Text moved up slightly
     final double textTop = isMobile
-        ? size.height * 0.15
+        ? size.height * 0.10
         : isTablet
-        ? size.height * 0.2
-        : size.height * 0.25;
+        ? size.height * 0.15
+        : size.height * 0.20;
 
     final double sidePadding = isMobile ? 20 : size.width * 0.1;
 
@@ -151,21 +156,21 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
                 SvgPicture.asset(
                   'assets/images/medihub-logo.svg',
                   height: isMobile
-                      ? 16
+                      ? 18
                       : isTablet
-                      ? 20
-                      : 26,
+                      ? 22
+                      : 28,
                   fit: BoxFit.contain,
                   placeholderBuilder: (context) =>
                       const CircularProgressIndicator(),
                 ),
                 const SizedBox(height: 20),
 
-                // --- Title (GT Walsheim Pro-style) ---
+                // --- Title ---
                 Text(
                   slide.title,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: _scaleFont(60, size),
+                    fontSize: _scaleFont(100, size), // larger
                     color: const Color(0xFF191919),
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
@@ -178,7 +183,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
                 Text(
                   slide.subtitle,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: _scaleFont(24, size),
+                    fontSize: _scaleFont(40, size), // larger
                     color: const Color(0xFF191919),
                     fontWeight: FontWeight.w400,
                     height: 1.2,
@@ -208,13 +213,17 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
           ),
         ),
 
-        // --- Product Image ---
+        // --- Product Image (large & slightly lower) ---
         Positioned(
-          right: isMobile ? size.width * 0.1 : size.width * 0.05,
-          top: isMobile ? size.height * 0.45 : size.height * 0.25,
+          right: isMobile ? -size.width * 0.05 : -size.width * 0.15,
+          bottom: isMobile ? -size.height * 0.00 : -size.height * 0.00,
           child: Image.asset(
             slide.imageUrl,
-            width: imageWidth,
+            width: isMobile
+                ? size.width * 1.35
+                : isTablet
+                ? size.width * 1.00
+                : size.width * 1.00,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) =>
                 const SizedBox.shrink(),
@@ -227,30 +236,26 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
   // --- Footer ---
   Widget _buildFooter(Size size) {
     final isMobile = _isMobile(size);
-    final fontSize = _scaleFont(42, size);
+    final fontSize = _scaleFont(46, size);
 
     return Positioned(
       bottom: 0,
       child: Container(
         width: size.width,
-        height: isMobile ? 80 : 120,
+        height: isMobile ? 110 : 210, // taller footer
         color: const Color(0xFF191919),
         child: Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.touch_app,
-                color: Colors.white,
-                size: isMobile ? 40 : 60,
-              ),
+              SvgPicture.asset('icons/touch-icon.svg'),
               const SizedBox(width: 20),
               Text(
-                'Touch to order',
+                'Touch to Order',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: fontSize,
                   color: Colors.white,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -263,7 +268,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
   // --- Timeline bar ---
   Widget _buildTimeline(Size size) {
     return Positioned(
-      bottom: _isMobile(size) ? 80 : 120,
+      bottom: _isMobile(size) ? 110 : 210,
       left: 0,
       child: Container(
         width: size.width,
