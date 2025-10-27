@@ -22,20 +22,20 @@ class SlideData {
 // --- Slides ---
 final List<SlideData> slides = [
   SlideData(
-    imageUrl: 'images/splash_1.png',
+    imageUrl: 'assets/images/splash_1.png',
+    title: 'Mobility Scooters',
+    subtitle: 'We offer wide range of styles and sizes.',
+    promoText: 'Delivered Today',
+  ),
+  SlideData(
+    imageUrl: 'assets/images/splash_2.png',
     title: 'Wheelchairs',
     subtitle: 'We offer wide range of styles and sizes.',
     promoText: 'Delivered Today',
   ),
   SlideData(
-    imageUrl: 'images/splash_2.png',
-    title: 'Mobility Scooters',
-    subtitle: 'We offer wide range of styles and sizes.',
-    promoText: 'Delivered Today',
-  ),
-  SlideData(
-    imageUrl: 'images/splash_3.png',
-    title: 'Mobility Scooters',
+    imageUrl: 'assets/images/splash_3.png',
+    title: 'Bed Frames',
     subtitle: 'We offer wide range of styles and sizes.',
     promoText: 'Delivered Today',
   ),
@@ -54,7 +54,6 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
   late AnimationController _timelineController;
 
   final Duration _slideDuration = const Duration(seconds: 6);
-  final Duration _animationDuration = const Duration(milliseconds: 700);
 
   @override
   void initState() {
@@ -123,31 +122,21 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
     final isMobile = _isMobile(size);
     final isTablet = _isTablet(size);
 
-    final double imageWidth = isMobile
-        ? size.width * 0.8
-        : isTablet
-        ? size.width * 0.5
-        : size.width * 0.4;
-
-    // Text moved up slightly
-    final double textTop = isMobile
-        ? size.height * 0.10
-        : isTablet
-        ? size.height * 0.15
-        : size.height * 0.20;
-
-    final double sidePadding = isMobile ? 20 : size.width * 0.1;
-
     return Stack(
       alignment: Alignment.center,
       children: [
-        Positioned.fill(child: Container(color: const Color(0xFFF5F5F5))),
+        Positioned.fill(
+          child: Container(color: Colors.white), // ✅ WHITE BACKGROUND
+        ),
 
         // --- Text content ---
         Positioned(
-          top: textTop,
-          left: sidePadding,
-          right: sidePadding,
+          top: isMobile
+              ? size.height *
+                    0.03 // 👈 close to top on mobile
+              : size.height * 0.08, // 👈 slightly lower on larger screens
+          left: isMobile ? 20 : size.width * 0.1,
+          right: isMobile ? 10 : size.width * 0.1,
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: size.width * 0.8),
             child: Column(
@@ -156,52 +145,55 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
                 SvgPicture.asset(
                   'assets/images/medihub-logo.svg',
                   height: isMobile
-                      ? 18
+                      ? 20
                       : isTablet
-                      ? 22
-                      : 28,
+                      ? 26
+                      : 32,
                   fit: BoxFit.contain,
                   placeholderBuilder: (context) =>
                       const CircularProgressIndicator(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 // --- Title ---
                 Text(
                   slide.title,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: _scaleFont(100, size), // larger
+                    fontSize: _scaleFont(120, size), // ⬆️ Larger title
                     color: const Color(0xFF191919),
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800, // ⬆️ Bolder
                     letterSpacing: -0.5,
                     height: 1.0,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // --- Subtitle ---
                 Text(
                   slide.subtitle,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: _scaleFont(40, size), // larger
+                    fontSize: _scaleFont(32, size), // ⬆️ Slightly larger
                     color: const Color(0xFF191919),
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w300, // Medium weight for clarity
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 36),
 
-                // --- Promo ---
+                // --- Promo text ---
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                    horizontal: 24,
+                    vertical: 14,
                   ),
                   color: const Color(0xFF4A306D),
                   child: Text(
                     slide.promoText,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: _scaleFont(26, size),
+                      fontSize: _scaleFont(
+                        32,
+                        size,
+                      ), // ⬆️ Slightly larger promo
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
@@ -213,20 +205,29 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
           ),
         ),
 
-        // --- Product Image (large & slightly lower) ---
+        // --- Product Image (large) ---
         Positioned(
-          right: isMobile ? -size.width * 0.05 : -size.width * 0.15,
-          bottom: isMobile ? -size.height * 0.00 : -size.height * 0.00,
+          right: isMobile ? -size.width * 0.5 : -size.width * 0.02,
+          bottom: isMobile
+              ? size.height *
+                    0.05 // 👈 still slightly lifted upward
+              : isTablet
+              ? size.height * 0.07
+              : size.height * 0.08,
           child: Image.asset(
             slide.imageUrl,
             width: isMobile
-                ? size.width * 1.35
+                ? size.width *
+                      1.25 // 👈 made bigger (was 1.0)
                 : isTablet
-                ? size.width * 1.00
-                : size.width * 1.00,
+                ? size.width *
+                      1.1 // 👈 a bit larger for tablets
+                : size.width * 1.1, // 👈 larger on desktop too
             fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) =>
-                const SizedBox.shrink(),
+            errorBuilder: (context, error, stackTrace) {
+              print('⚠️ Image load failed: $error');
+              return const Icon(Icons.error, color: Colors.red);
+            },
           ),
         ),
       ],
@@ -242,13 +243,21 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
       bottom: 0,
       child: Container(
         width: size.width,
-        height: isMobile ? 110 : 210, // taller footer
+        height: isMobile ? 110 : 210,
         color: const Color(0xFF191919),
         child: Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SvgPicture.asset('icons/touch-icon.svg'),
+              // ✅ Corrected icon path
+              SvgPicture.asset(
+                'assets/icons/touch-icon.svg',
+                height: isMobile ? 40 : 70,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
               const SizedBox(width: 20),
               Text(
                 'Touch to Order',
@@ -299,7 +308,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Colors.white, // ✅ WHITE PAGE BACKGROUND
       body: GestureDetector(
         onTap: _toggleKiosk,
         child: Stack(

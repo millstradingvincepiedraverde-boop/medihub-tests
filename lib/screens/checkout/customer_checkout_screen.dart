@@ -395,7 +395,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     List<PostageRate> postageRates,
     String selectedDeliveryMethod,
   ) {
-    // Find the selected postage rate from the list
     final selectedRate = postageRates.firstWhere(
       (r) => r.service.toLowerCase() == selectedDeliveryMethod.toLowerCase(),
       orElse: () => PostageRate(
@@ -425,7 +424,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
           ),
           const SizedBox(height: 12),
 
-          // Cart Items
+          // 🛒 Cart items
           ...cartItems.map((item) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -446,7 +445,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
           const Divider(),
 
-          // Subtotal
+          // 💰 Subtotal
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -456,7 +455,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
           ),
           const SizedBox(height: 8),
 
-          // Shipping (dynamic)
+          // 🚚 Shipping
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -472,7 +471,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
           const Divider(thickness: 1.5),
 
-          // Total
+          // 🧾 Total
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -485,6 +484,32 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // 💳 Payment Method Logos
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              runSpacing: 10,
+              children: [
+                SvgPicture.asset('assets/icons/paypal.svg', height: 28),
+                SvgPicture.asset('assets/icons/mastercard.svg', height: 28),
+                SvgPicture.asset('assets/icons/amex.svg', height: 28),
+                SvgPicture.asset('assets/icons/ndis.svg', height: 32),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          const Center(
+            child: Text(
+              "We accept PayPal, Mastercard, Amex & NDIS payments",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),

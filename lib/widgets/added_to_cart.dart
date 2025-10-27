@@ -93,25 +93,42 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
   }
 
   void _navigateToCart(BuildContext context) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const CartScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(1.0, 0.0);
-          const end = Offset.zero;
-          final curve = Curves.easeInOutCubic;
-          final tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: child,
-          );
-        },
-      ),
+    // ✅ Close the dialog and any PDPs
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).popUntil((route) => route.isFirst);
+
+    // ✅ Then open cart from bottom (85% height)
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Cart",
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: FractionallySizedBox(
+            heightFactor: 0.85, // 👈 85% of the screen
+            widthFactor: 1.0,
+            child: const CartScreen(),
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        // 👇 smooth slide up transition
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOutCubic,
+        );
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 1), // from bottom
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        );
+      },
     );
   }
 
@@ -228,7 +245,6 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                       child: const Text(
                         "Continue Shopping",
 
-                        
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 17,
