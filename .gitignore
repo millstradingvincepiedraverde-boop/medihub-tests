@@ -44,3 +44,19 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 .vercel
+
+# Environment variables - IMPORTANT!
+.env
+.env.*
+!.env.example
+
+# Android signing keys
+*.jks
+*.keystore
+local.properties
+android/key.properties
+
+# iOS
+ios/Flutter/flutter_export_environment.sh
+ios/Pods/
+ios/.symlinks/

@@ -22,19 +22,19 @@ class SlideData {
 // --- Slides ---
 final List<SlideData> slides = [
   SlideData(
-    imageUrl: 'assets/images/splash_1.png',
+    imageUrl: 'assets/images/splash_3.png',
     title: 'Mobility Scooters',
     subtitle: 'We offer wide range of styles and sizes.',
     promoText: 'Delivered Today',
   ),
   SlideData(
-    imageUrl: 'assets/images/splash_2.png',
+    imageUrl: 'assets/images/splash_1.png',
     title: 'Wheelchairs',
     subtitle: 'We offer wide range of styles and sizes.',
     promoText: 'Delivered Today',
   ),
   SlideData(
-    imageUrl: 'assets/images/splash_3.png',
+    imageUrl: 'assets/images/splash_2.png',
     title: 'Bed Frames',
     subtitle: 'We offer wide range of styles and sizes.',
     promoText: 'Delivered Today',
@@ -207,22 +207,22 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
 
         // --- Product Image (large) ---
         Positioned(
-          right: isMobile ? -size.width * 0.5 : -size.width * 0.02,
+          right: isMobile ? -size.width * 1.7 : -size.width * 0.0,
           bottom: isMobile
               ? size.height *
-                    0.05 // 👈 still slightly lifted upward
+                    0.60 
               : isTablet
-              ? size.height * 0.07
-              : size.height * 0.08,
+              ? size.height * 0.12
+              : size.height * 0.13,
           child: Image.asset(
             slide.imageUrl,
             width: isMobile
                 ? size.width *
-                      1.25 // 👈 made bigger (was 1.0)
+                      .99
                 : isTablet
                 ? size.width *
-                      1.1 // 👈 a bit larger for tablets
-                : size.width * 1.1, // 👈 larger on desktop too
+                      .99 
+                : size.width * .99, 
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) {
               print('⚠️ Image load failed: $error');
@@ -243,7 +243,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
       bottom: 0,
       child: Container(
         width: size.width,
-        height: isMobile ? 110 : 210,
+        height: isMobile ? 110 : 250,
         color: const Color(0xFF191919),
         child: Center(
           child: Row(
@@ -252,17 +252,17 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
               // ✅ Corrected icon path
               SvgPicture.asset(
                 'assets/icons/touch-icon.svg',
-                height: isMobile ? 40 : 70,
+                height: isMobile ? 40 : 120,
                 colorFilter: const ColorFilter.mode(
                   Colors.white,
                   BlendMode.srcIn,
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 40),
               Text(
                 'Touch to Order',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: fontSize,
+                  fontSize: 50,
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
@@ -277,7 +277,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
   // --- Timeline bar ---
   Widget _buildTimeline(Size size) {
     return Positioned(
-      bottom: _isMobile(size) ? 110 : 210,
+      bottom: _isMobile(size) ? 110 : 250,
       left: 0,
       child: Container(
         width: size.width,

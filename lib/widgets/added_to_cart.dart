@@ -237,9 +237,9 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        padding: const EdgeInsets.symmetric(vertical: 32),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Text(
@@ -247,7 +247,7 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
 
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 17,
+                          fontSize: 34,
                         ),
                       ),
                     ),
@@ -262,16 +262,16 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4A2E8E),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        padding: const EdgeInsets.symmetric(vertical: 32),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Text(
                         "View Cart & Pay",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 17,
+                          fontSize: 34,
                         ),
                       ),
                     ),

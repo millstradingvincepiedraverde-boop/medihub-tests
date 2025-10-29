@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import './screens/kiosk-main.dart';
 import './controllers/product_controller.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Helper function to play a light haptic tap
 void _playHapticFeedback() {
@@ -11,6 +12,8 @@ void _playHapticFeedback() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await dotenv.load(fileName: ".env");
 
   // 🔒 Lock orientation to portrait only
   await SystemChrome.setPreferredOrientations([
