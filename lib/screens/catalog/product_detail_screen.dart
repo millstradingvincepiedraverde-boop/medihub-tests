@@ -4,7 +4,6 @@ import 'package:medihub_tests/widgets/added_to_cart.dart';
 // kept for optional future use
 import '../../models/product.dart';
 import '../../services/order_service.dart';
-import '../../utils/snackbar_helper.dart';
 import '../../constants/app_constants.dart';
 
 class ProductDetailScreen extends StatefulWidget {

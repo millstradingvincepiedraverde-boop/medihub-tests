@@ -1,12 +1,4 @@
-// CustomerInfoScreen.dart
-// 1. Add to pubspec.yaml:
-//    flutter_google_places_sdk: ^1.0.0
-//    flutter_dotenv: ^5.1.0
-// 2. Create .env with GOOGLE_PLACES_API_KEY=your_key
-// 3. Load dotenv in main.dart before runApp()
-
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../models/customer.dart';
@@ -168,7 +160,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
       debugPrint('Predictions count: ${predictions.predictions.length}');
       for (final p in predictions.predictions) {
-        debugPrint('➡️ ${p.fullText ?? p.primaryText}');
+        debugPrint('➡️ ${p.fullText}');
       }
 
       _predictions = predictions.predictions;
@@ -201,8 +193,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
     final overlay = OverlayEntry(
       builder: (context) {
-        final screenWidth = MediaQuery.of(context).size.width;
-        final horizontalPadding = screenWidth < 900 ? 24.0 : 40.0;
         final width = size.width; // 👈 match field width exactly
 
         return Positioned(
@@ -266,8 +256,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                               itemBuilder: (context, index) {
                                 final p = _predictions[index];
                                 final title = p.primaryText;
-                                final subtitle =
-                                    p.secondaryText ?? (p.fullText ?? '');
+                                final subtitle = p.secondaryText;
                                 return ListTile(
                                   leading: const Icon(
                                     Icons.location_on,
@@ -371,7 +360,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
           } else if (types.contains('locality')) {
             locality = component.name;
           } else if (types.contains('administrative_area_level_1')) {
-            state = component.shortName ?? component.name;
+            state = component.shortName;
           } else if (types.contains('postal_code')) {
             postcode = component.name;
           }

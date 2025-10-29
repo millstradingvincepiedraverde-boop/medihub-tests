@@ -28,12 +28,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   static const double _kTabletBreakpoint = 800.0;
 
-  static const Duration _inactivityTimeout = Duration(
-    seconds: 120,
-  ); // idle timeout
-  static const Duration _dialogAutoClose = Duration(
-    seconds: 30,
-  ); // auto-redirect delay
+  static const Duration _inactivityTimeout = Duration(seconds: 120);
 
   ProductCategory? _selectedCategory;
   dynamic _selectedSubType;
@@ -535,7 +530,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     }
 
     // Detect content layout type
-    final bool isContentNarrow = screenWidth >= _kTabletBreakpoint;
 
     // 🧠 Always start/reset inactivity timer when this widget rebuilds
     // (especially when products or search results change)
@@ -844,8 +838,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     required int count,
     required VoidCallback onTap,
   }) {
-    final Color primaryColor = const Color.fromARGB(255, 71, 3, 88);
-
     return Padding(
       padding: const EdgeInsets.only(left: 20.0, top: 10.0, bottom: 10.0),
       // ⬆️ Removed right padding to let selected box align flush to the right edge
