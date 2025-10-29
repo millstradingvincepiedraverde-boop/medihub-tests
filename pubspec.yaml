@@ -18,6 +18,8 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   flutter_dotenv: ^5.1.0
   flutter_google_places_sdk: ^0.4.2+1
+  google_places_flutter: ^2.0.8
+  lottie: ^3.1.0
 
 
 flutter_launcher_icons:
@@ -48,3 +50,6 @@ flutter:
     - assets/images/homecare/
     - assets/icons/
     - .env
+    - assets/animations/
+
+    

@@ -29,22 +29,35 @@ class PostageService {
       final body = jsonDecode(response.body);
       print('✅ [PostageService] Response parsed successfully.');
 
-      final onDemand = body['onDemand'] as List? ?? [];
-      final postage =
-          double.tryParse(body['postage']?.toString() ?? '0') ?? 0.0;
+      final List<PostageRate> rates = [];
 
-      print('📊 [PostageService] Found ${onDemand.length} on-demand rate(s)');
+      // 🚚 Handle On Demand section
+      if (body['onDemand'] != null && body['onDemand'] is List) {
+        final onDemand = body['onDemand'] as List;
+        print('📊 [PostageService] Found ${onDemand.length} on-demand rate(s)');
+        for (final rate in onDemand) {
+          rates.add(
+            PostageRate(
+              service: rate['internal_label'] ?? 'On Demand',
+              eta: rate['label'] ?? 'Delivered Tomorrow',
+              cost: 4.95, // store original cost (for logic), not free yet
+              code: 'ON_DEMAND',
+              sku: sku,
+            ),
+          );
+        }
+      }
 
-      final rates = onDemand.map((rate) {
-        return PostageRate.fromJson(rate, sku: sku);
-      }).toList();
-
-      // If no on-demand rates exist, return a basic postage rate
+      // 📦 Handle normal postage if no on-demand found
       if (rates.isEmpty) {
+        final postageCost =
+            double.tryParse(body['postage']?.toString() ?? '0') ?? 0.0;
+        print('📦 [PostageService] Using standard postage: $postageCost');
+
         rates.add(
           PostageRate(
             service: 'Standard Delivery',
-            cost: postage,
+            cost: postageCost,
             sku: sku,
             eta: 'N/A',
             code: '',
@@ -59,7 +72,7 @@ class PostageService {
     }
   }
 
-  /// ✅ Compute Shopify-like rates (same logic as calculateShipping)
+  /// ✅ Compute Shopify-like rates (decides if FREE on-demand or standard)
   Future<Map<String, dynamic>> calculateShipping(
     Map<String, dynamic> body,
   ) async {
@@ -70,10 +83,7 @@ class PostageService {
     final postalCode = destination['postal_code']?.toString() ?? '';
 
     double totalShippingCost = 0;
-    final Map<String, Map<String, dynamic>> onDemandTotals = {};
-    bool allItemsHaveOnDemand = true;
-
-    int toCents(num n) => (n * 100).round();
+    bool allHaveOnDemand = true;
 
     for (final item in items) {
       final sku = item['sku']?.toString() ?? '';
@@ -86,51 +96,44 @@ class PostageService {
           qty: quantity,
         );
 
-        // Standard postage
-        final base = rates.isNotEmpty ? rates.first.cost : 0;
-        totalShippingCost += base;
-
-        // On-demand aggregation
-        if (rates.isEmpty || rates.first.service == 'Standard Delivery') {
-          allItemsHaveOnDemand = false;
+        // If product has no On Demand, mark false and use postage rate
+        if (rates.any((r) => r.service.toLowerCase().contains('on demand'))) {
+          print("🟢 [PostageService] $sku supports On Demand");
         } else {
-          for (final rate in rates) {
-            final label = rate.service.trim();
-            final internal = label.toLowerCase().replaceAll(' ', '_');
-            if (onDemandTotals.containsKey(internal)) {
-              onDemandTotals[internal]!['total'] += rate.cost;
-            } else {
-              onDemandTotals[internal] = {'label': label, 'total': rate.cost};
-            }
-          }
+          print("🟠 [PostageService] $sku uses standard delivery");
+          allHaveOnDemand = false;
+          final postageRate = rates.first.cost;
+          totalShippingCost += postageRate;
         }
       } catch (e) {
-        print("⚠️ [PostageService] Error fetching shipping for $sku: $e");
-        allItemsHaveOnDemand = false;
-        continue;
+        print("⚠️ [PostageService] Error fetching rates for $sku: $e");
+        allHaveOnDemand = false;
       }
     }
 
     final List<Map<String, dynamic>> ratesResult = [];
 
-    if (allItemsHaveOnDemand && onDemandTotals.isNotEmpty) {
-      // ✅ All items have on-demand → show free on-demand options
-      for (final entry in onDemandTotals.entries) {
-        ratesResult.add({
-          'service_name': entry.value['label'],
-          'service_code': entry.key,
-          'total_price': 0,
-          'currency': 'AUD',
-        });
-      }
+    if (allHaveOnDemand) {
+      // ✅ Show one combined FREE On Demand option
+      ratesResult.add({
+        'service_name': 'On Demand Delivery',
+        'service_code': 'FREE_ON_DEMAND',
+        'total_price': 0,
+        'currency': 'AUD',
+      });
+      print("🎉 [PostageService] All items have On Demand → Free delivery!");
     } else {
-      // ❌ Some items lack on-demand → show standard delivery
+      // 🚚 Otherwise, show standard delivery with summed cost
+      final int totalCents = (totalShippingCost * 100).round();
       ratesResult.add({
         'service_name': 'Standard Delivery',
         'service_code': 'mills_shipping',
-        'total_price': toCents(totalShippingCost),
+        'total_price': totalCents,
         'currency': 'AUD',
       });
+      print(
+        "📦 [PostageService] Standard delivery total: \$${totalShippingCost.toStringAsFixed(2)}",
+      );
     }
 
     return {'rates': ratesResult};

@@ -1,7 +1,10 @@
+// lib/screens/cart/cart_screen.dart
 import 'package:flutter/material.dart';
 import 'package:medihub_tests/controllers/product_controller.dart';
 import 'package:medihub_tests/models/product.dart';
 import 'package:provider/provider.dart';
+import 'package:lottie/lottie.dart'; // Lottie import
+// import 'package:lottie/lottie.dart'; // Uncomment when you add Lottie animations
 import '../../services/order_service.dart';
 import '../checkout/customer_checkout_screen.dart';
 import '../../widgets/suggestion_card.dart';
@@ -13,8 +16,51 @@ class CartScreen extends StatefulWidget {
   State<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen> {
+class _CartScreenState extends State<CartScreen>
+    with SingleTickerProviderStateMixin {
   final OrderService _orderService = OrderService();
+
+  // Slide controller for the whole cart area (ease-in-from-bottom)
+  late final AnimationController _slideController;
+  late final Animation<Offset> _slideAnimation;
+
+  // Optional Lottie controller if you want programmatic control (looping etc.)
+  // late final AnimationController _lottieController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(
+          begin: const Offset(0, 0.12), // slightly below the screen
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
+
+    // Start the slide animation shortly after build for a smooth effect.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _slideController.forward();
+      }
+    });
+
+    // If you want to control the Lottie animation programmatically:
+    // _lottieController = AnimationController(vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    // _lottieController.dispose();
+    super.dispose();
+  }
 
   void _navigateToProduct(String productId) {
     final productController = context.read<ProductController>();
@@ -119,7 +165,7 @@ class _CartScreenState extends State<CartScreen> {
           body: SafeArea(
             child: Column(
               children: [
-                // === HEADER ===
+                // === HEADER WITH LOTTIE ICON ANIM ===
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -129,13 +175,33 @@ class _CartScreenState extends State<CartScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Shopping Cart',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
+                      Row(
+                        children: [
+                          // Shopping Cart Icon - Replace with Lottie when available
+                          TweenAnimationBuilder(
+                            tween: Tween<double>(begin: 0, end: 1),
+                            duration: const Duration(milliseconds: 800),
+                            builder: (context, double value, child) {
+                              return Transform.scale(
+                                scale: value,
+                                child: const Icon(
+                                  Icons.shopping_cart,
+                                  size: 32,
+                                  color: Color(0xFF4A306D),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Shopping Cart',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
@@ -206,51 +272,104 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                   ),
 
-                // === MAIN CART ===
+                // === MAIN CART (SLIDE TRANSITION FROM BOTTOM) ===
                 Expanded(
-                  child: cartItems.isEmpty
-                      ? Container(
-                          color: Colors.white,
-                          child: const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.shopping_cart_outlined,
-                                  size: 80,
-                                  color: Colors.grey,
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Your cart is empty',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.black54,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: cartItems.isEmpty
+                        ? Container(
+                            color: Colors.white,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Lottie animation for empty cart (local asset if available)
+                                  // If you haven't added the local asset yet, you can use Lottie.network for quick testing.
+                                  SizedBox(
+                                    width: 180,
+                                    height: 180,
+                                    child: Builder(
+                                      builder: (context) {
+                                        // Try to load local asset first; if missing, fallback to network animation.
+                                        // NOTE: If you always have the local asset present, you can directly use Lottie.asset('assets/lottie/empty_cart.json')
+                                        try {
+                                          return Lottie.asset(
+                                            'assets/lottie/empty_cart.json',
+                                            width: 180,
+                                            height: 180,
+                                            repeat: false,
+                                            // controller: _lottieController, // optional
+                                          );
+                                        } catch (e) {
+                                          // Fallback network file (useful for initial testing)
+                                          return Lottie.network(
+                                            'https://assets7.lottiefiles.com/private_files/lf30_jmgekfqg.json',
+                                            width: 180,
+                                            height: 180,
+                                            repeat: false,
+                                          );
+                                        }
+                                      },
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 24),
+                                  const Text(
+                                    'Your cart is empty',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.black54,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Add items to get started',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black38,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : Container(
+                            color: Colors.white,
+                            child: ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              itemCount: cartItems.length,
+                              separatorBuilder: (context, index) =>
+                                  const Divider(
+                                    height: 1,
+                                    thickness: 1,
+                                    color: Color(0xFFE5E5E5),
+                                  ),
+                              itemBuilder: (context, index) {
+                                final item = cartItems[index];
+                                // Animate each item with staggered delay
+                                return TweenAnimationBuilder(
+                                  key: ValueKey(item.product.id),
+                                  tween: Tween<double>(begin: 0, end: 1),
+                                  duration: const Duration(milliseconds: 400),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, double value, child) {
+                                    return Opacity(
+                                      opacity: value,
+                                      child: Transform.translate(
+                                        offset: Offset(30 * (1 - value), 0),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: _buildCartItem(item, isMobile),
+                                );
+                              },
                             ),
                           ),
-                        )
-                      : Container(
-                          color: Colors.white,
-                          child: ListView.separated(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            itemCount: cartItems.length,
-                            separatorBuilder: (context, index) => const Divider(
-                              height: 1,
-                              thickness: 1,
-                              color: Color(0xFFE5E5E5),
-                            ),
-                            itemBuilder: (context, index) {
-                              final item = cartItems[index];
-                              return _buildCartItem(item, isMobile);
-                            },
-                          ),
-                        ),
+                  ),
                 ),
 
                 // === SUMMARY AND BUTTONS ===
@@ -261,29 +380,43 @@ class _CartScreenState extends State<CartScreen> {
                     children: [
                       // Summary
                       if (cartItems.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Text(
-                                '${cartItems.length} Items:',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                        TweenAnimationBuilder(
+                          tween: Tween<double>(begin: 0, end: 1),
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, double value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 10 * (1 - value)),
+                                child: child,
                               ),
-                              const SizedBox(width: 16),
-                              Text(
-                                '\$${total.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '${cartItems.length} Items:',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 16),
+                                Text(
+                                  '\$${total.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
 
@@ -381,10 +514,10 @@ class _CartScreenState extends State<CartScreen> {
 
   Widget _buildCartItem(cartItem, bool isMobile) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20,  horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
       child: Row(
         children: [
-          // Product Image - INCREASED SIZE
+          // Product Image
           Container(
             width: isMobile ? 80 : 120,
             height: isMobile ? 80 : 120,
@@ -424,13 +557,13 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
 
-          // Quantity Controls - INCREASED SIZE
+          // Quantity Controls
           SizedBox(
             width: isMobile ? 80 : 100,
             child: _quantityControl(cartItem),
           ),
 
-          // Price - INCREASED SIZE
+          // Price
           SizedBox(
             width: isMobile ? 90 : 110,
             child: Center(
@@ -445,7 +578,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
 
-          // Total - INCREASED SIZE
+          // Total
           SizedBox(
             width: isMobile ? 90 : 110,
             child: Center(

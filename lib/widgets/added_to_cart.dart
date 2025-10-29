@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:animated_check/animated_check.dart';
+import 'package:lottie/lottie.dart';
 import '../screens/cart/cart_screen.dart';
 
 class ItemAddedDialog extends StatefulWidget {
   final String itemName;
-  final String? imageUrl; // ✅ new
+  final String? imageUrl;
   final VoidCallback? onContinue;
   final VoidCallback? onViewCart;
 
@@ -22,21 +22,20 @@ class ItemAddedDialog extends StatefulWidget {
 
 class _ItemAddedDialogState extends State<ItemAddedDialog>
     with TickerProviderStateMixin {
-  late AnimationController _checkController;
-  late AnimationController _textController;
   late AnimationController _imageController;
-  late Animation<double> _checkAnimation;
-  late Animation<double> _circleScale;
-  late Animation<double> _textScale;
+  late AnimationController _textController;
+  late AnimationController _lottieController;
   late Animation<double> _imageScale;
+  late Animation<double> _textScale;
+  bool _showLottie = false;
 
   @override
   void initState() {
     super.initState();
 
-    // 🖼️ Image "pop in" animation
+    // 🖼️ Image "pop" animation
     _imageController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     _imageScale = CurvedAnimation(
@@ -46,44 +45,41 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
 
     // 🪩 Text "pop" animation
     _textController = AnimationController(
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     _textScale = CurvedAnimation(
       parent: _textController,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutBack,
     );
 
-    // ✅ Checkmark + circle animations
-    _checkController = AnimationController(
-      duration: const Duration(milliseconds: 1300),
-      vsync: this,
-    );
-    _checkAnimation = CurvedAnimation(
-      parent: _checkController,
-      curve: Curves.easeOutExpo,
-    );
-    _circleScale = Tween<double>(begin: 0, end: 1.1).animate(
-      CurvedAnimation(
-        parent: _checkController,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack),
-      ),
-    );
+    // 🎞️ Lottie animation controller
+    _lottieController = AnimationController(vsync: this);
 
-    // Sequence: image → text → check
-    _imageController.forward().then((_) async {
-      await Future.delayed(const Duration(milliseconds: 200));
-      _textController.forward();
-      await Future.delayed(const Duration(milliseconds: 400));
-      _checkController.forward();
-    });
+    // 🪄 Animation sequence
+    _startSequence();
+  }
+
+  Future<void> _startSequence() async {
+    // Image first
+    await _imageController.forward();
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Then text
+    await _textController.forward();
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Then show Lottie animation
+    if (mounted) {
+      setState(() => _showLottie = true);
+    }
   }
 
   @override
   void dispose() {
-    _checkController.dispose();
-    _textController.dispose();
     _imageController.dispose();
+    _textController.dispose();
+    _lottieController.dispose();
     super.dispose();
   }
 
@@ -93,13 +89,11 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
   }
 
   void _navigateToCart(BuildContext context) {
-    // ✅ Close the dialog and any PDPs
     Navigator.of(
       context,
       rootNavigator: true,
     ).popUntil((route) => route.isFirst);
 
-    // ✅ Then open cart from bottom (85% height)
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -109,21 +103,20 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
         return Align(
           alignment: Alignment.bottomCenter,
           child: FractionallySizedBox(
-            heightFactor: 0.85, // 👈 85% of the screen
+            heightFactor: 0.85,
             widthFactor: 1.0,
             child: const CartScreen(),
           ),
         );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        // 👇 smooth slide up transition
         final curved = CurvedAnimation(
           parent: animation,
           curve: Curves.easeInOutCubic,
         );
         return SlideTransition(
           position: Tween<Offset>(
-            begin: const Offset(0, 1), // from bottom
+            begin: const Offset(0, 1),
             end: Offset.zero,
           ).animate(curved),
           child: child,
@@ -147,7 +140,7 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 🖼️ Product Image (big + animated)
+              // 🖼️ Animated product image
               ScaleTransition(
                 scale: _imageScale,
                 child: ClipRRect(
@@ -180,7 +173,7 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
               ),
               const SizedBox(height: 20),
 
-              // 🪩 "Item Added to Cart" text pop
+              // 🪩 "Item Added to Cart" text
               ScaleTransition(
                 scale: _textScale,
                 child: const Text(
@@ -193,38 +186,32 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 40),
 
-              // ✅ Animated green circle + check
-              AnimatedBuilder(
-                animation: _circleScale,
-                builder: (context, child) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Transform.scale(
-                        scale: _circleScale.value,
-                        child: Container(
-                          width: 160,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            color: Colors.greenAccent.withOpacity(0.3),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                      AnimatedCheck(
-                        progress: _checkAnimation,
-                        size: 120,
-                        color: Colors.green,
-                      ),
-                    ],
-                  );
-                },
+              // 🎞️ Lottie animation (success)
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 600),
+                switchInCurve: Curves.easeOutCubic,
+                child: _showLottie
+                    ? Lottie.asset(
+                        'assets/animations/success.json',
+                        key: const ValueKey('successLottie'),
+                        controller: _lottieController,
+                        onLoaded: (composition) {
+                          _lottieController
+                            ..duration = composition.duration
+                            ..forward();
+                        },
+                        width: 180,
+                        height: 180,
+                        repeat: false,
+                      )
+                    : const SizedBox(height: 180),
               ),
 
-              const SizedBox(height: 70),
+              const SizedBox(height: 50),
 
+              // Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -244,7 +231,6 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                       ),
                       child: const Text(
                         "Continue Shopping",
-
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 34,
