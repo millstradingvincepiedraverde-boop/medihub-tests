@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../../models/customer.dart';
-import '../../services/order_service.dart';
-import 'order_confirmation_screen.dart';
-import '../../controllers/postage_controller.dart';
-import '../../models/postage_rate.dart';
+import 'package:medihub_tests/models/customer.dart';
+import 'package:medihub_tests/models/postage_rate.dart';
+import 'package:medihub_tests/screens/checkout/order_confirmation_screen.dart';
+import 'package:medihub_tests/services/order_service.dart';
+import 'package:medihub_tests/services/postage_service.dart';
+import 'package:medihub_tests/widgets/checkout/address_suggestions_overlay.dart';
+import 'package:medihub_tests/widgets/checkout/checkout_theme.dart';
+import 'package:medihub_tests/widgets/checkout/custom_text_field.dart';
+import 'package:medihub_tests/widgets/checkout/delivery_options.dart';
+import 'package:medihub_tests/widgets/checkout/order_summary.dart';
+import 'package:medihub_tests/widgets/checkout/section_title.dart';
+import 'package:medihub_tests/widgets/checkout/submit_buttons.dart';
 
 class CustomerInfoScreen extends StatefulWidget {
   const CustomerInfoScreen({super.key});
@@ -16,50 +23,52 @@ class CustomerInfoScreen extends StatefulWidget {
 
 class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     with SingleTickerProviderStateMixin {
-  // === Services / controllers ===
+  // Services
   final _formKey = GlobalKey<FormState>();
   final _orderService = OrderService();
-  final _postageController = PostageController();
+  final _postageService = PostageService();
 
-  // === Text controllers ===
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _aptController = TextEditingController();
-  final _postcodeController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _stateController = TextEditingController();
+  // Controllers Map
+  final _controllers = {
+    'email': TextEditingController(),
+    'phone': TextEditingController(),
+    'firstName': TextEditingController(),
+    'lastName': TextEditingController(),
+    'address': TextEditingController(),
+    'apt': TextEditingController(),
+    'postcode': TextEditingController(),
+    'city': TextEditingController(),
+    'state': TextEditingController(),
+  };
 
-  // === UI state ===
+  // State
   String _deliveryMethod = 'standard';
   List<PostageRate> _postageRates = [];
   bool _isLoadingRates = false;
 
-  // === animations for bottom sheet ===
+  // Animation
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
 
-  // === Google Places ===
+  // Google Places
   FlutterGooglePlacesSdk? _places;
   List<AutocompletePrediction> _predictions = [];
   bool _isSearching = false;
   final FocusNode _addressFocusNode = FocusNode();
-
-  // overlay positioning
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
-
-  // styling
-  static const Color _primaryColor = Color(0xFF4A306D);
-  static const String _fontFamily = 'Poppins';
 
   @override
   void initState() {
     super.initState();
+    _initAnimation();
+    _loadSavedData();
+    _setupListeners();
+    _initializePlaces();
+  }
 
+  void _initAnimation() {
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 350),
@@ -73,76 +82,72 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
       end: 0.6,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.forward();
-
-    // Listen to typing and show suggestions
-    _addressController.addListener(() {
-      final q = _addressController.text.trim();
-      if (q.length >= 3) {
-        _searchPlaces(q);
-      } else {
-        _predictions = [];
-        _removeOverlay();
-        setState(() {});
-      }
-    });
-
-    // Dismiss overlay when address field loses focus
-    _addressFocusNode.addListener(() {
-      if (!_addressFocusNode.hasFocus) {
-        // small delay so a tap on a suggestion still works
-        Future.delayed(const Duration(milliseconds: 100), () {
-          _removeOverlay();
-        });
-      } else {
-        // if we have predictions show them
-        if (_predictions.isNotEmpty) _showOverlay();
-      }
-    });
-
-    _initializePlaces();
   }
 
-  void _initializePlaces() async {
+  void _setupListeners() {
+    _controllers['address']!.addListener(_onAddressChanged);
+    _addressFocusNode.addListener(_onAddressFocusChanged);
+    _controllers.values.forEach((c) => c.addListener(_saveData));
+  }
+
+  void _onAddressChanged() {
+    final query = _controllers['address']!.text.trim();
+    if (query.length >= 3) {
+      _searchPlaces(query);
+    } else {
+      setState(() {
+        _predictions = [];
+        _removeOverlay();
+      });
+    }
+  }
+
+  void _onAddressFocusChanged() {
+    if (!_addressFocusNode.hasFocus) {
+      Future.delayed(const Duration(milliseconds: 100), _removeOverlay);
+    } else if (_predictions.isNotEmpty) {
+      _showOverlay();
+    }
+  }
+
+  void _loadSavedData() {
+    final saved = _orderService.savedCustomerData;
+    if (saved != null) {
+      saved.forEach((key, value) {
+        if (_controllers.containsKey(key)) {
+          _controllers[key]!.text = value;
+        }
+      });
+      _deliveryMethod = saved['deliveryMethod'] ?? 'standard';
+      if (_controllers['postcode']!.text.length >= 4) {
+        _fetchPostageRates(_controllers['postcode']!.text);
+      }
+    }
+  }
+
+  void _saveData() {
+    _orderService.saveCustomerData({
+      ..._controllers.map((key, controller) => MapEntry(key, controller.text)),
+      'deliveryMethod': _deliveryMethod,
+    });
+  }
+
+  Future<void> _initializePlaces() async {
     try {
-      // accept either env key name to be flexible
       final apiKey =
           dotenv.env['GOOGLE_PLACES_API_KEY'] ??
           dotenv.env['GOOGLE_API_KEY'] ??
           '';
-      if (apiKey.isEmpty) {
-        debugPrint('⚠️ Google Places API key not found in .env file');
-        return;
-      }
-
+      if (apiKey.isEmpty) return;
       _places = FlutterGooglePlacesSdk(apiKey);
       await _places!.isInitialized();
-      debugPrint('✅ Google Places SDK initialized successfully');
     } catch (e) {
       debugPrint('❌ Failed to initialize Google Places SDK: $e');
     }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _addressController.dispose();
-    _aptController.dispose();
-    _postcodeController.dispose();
-    _cityController.dispose();
-    _stateController.dispose();
-    _addressFocusNode.dispose();
-    _removeOverlay();
-    super.dispose();
-  }
-
   Future<void> _searchPlaces(String query) async {
     if (query.length < 3 || _places == null) {
-      // ensure overlay removed
-      _removeOverlay();
       setState(() {
         _isSearching = false;
         _predictions = [];
@@ -157,14 +162,10 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         query,
         countries: ['AU'],
       );
-
-      debugPrint('Predictions count: ${predictions.predictions.length}');
-      for (final p in predictions.predictions) {
-        debugPrint('➡️ ${p.fullText}');
-      }
-
-      _predictions = predictions.predictions;
-      setState(() => _isSearching = false);
+      setState(() {
+        _predictions = predictions.predictions;
+        _isSearching = false;
+      });
 
       if (_addressFocusNode.hasFocus && _predictions.isNotEmpty) {
         _showOverlay();
@@ -172,7 +173,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         _removeOverlay();
       }
     } catch (e) {
-      debugPrint('❌ Places API error: $e');
       setState(() {
         _isSearching = false;
         _predictions = [];
@@ -183,178 +183,32 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
   void _showOverlay() {
     _removeOverlay();
-
     if (_predictions.isEmpty) return;
 
     final renderBox =
         _addressFocusNode.context!.findRenderObject() as RenderBox;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    final overlay = OverlayEntry(
-      builder: (context) {
-        return Positioned(
-          width: size.width + 44,
-          left: offset.dx - 20,
-          child: CompositedTransformFollower(
-            link: _layerLink,
-            showWhenUnlinked: false,
-            offset: Offset(0, size.height + 30), // small gap below TextField
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 350),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-
-                  border: Border.all(color: Colors.grey.shade300),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 🧭 Header “SUGGESTIONS”
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'SUGGESTIONS',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          letterSpacing: 1.2,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-
-                    // 🔍 List of suggestions
-                    Expanded(
-                      child: _isSearching
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4.0,
-                              ),
-                              itemCount: _predictions.length,
-                              separatorBuilder: (_, __) => Divider(
-                                height: 1,
-                                color: Colors.grey.shade200,
-                              ),
-                              itemBuilder: (context, index) {
-                                final p = _predictions[index];
-                                return InkWell(
-                                  onTap: () {
-                                    _selectPlace(p.placeId);
-                                    _removeOverlay();
-                                    _addressFocusNode.unfocus();
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.location_on_outlined,
-                                          color: Colors.grey,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                p.primaryText,
-                                                style: const TextStyle(
-                                                  fontFamily: 'Poppins',
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                p.secondaryText,
-                                                style: TextStyle(
-                                                  fontFamily: 'Poppins',
-                                                  fontSize: 13,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-
-                    // 🪄 “Powered by Google”
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(12),
-                        ),
-                        border: Border(
-                          top: BorderSide(
-                            color: Colors.grey.shade300,
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      alignment: Alignment.centerRight,
-                      child: Image.network(
-                        'https://developers.google.com/maps/documentation/images/powered_by_google_on_white.png',
-                        height: 18,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        width: renderBox.size.width + 44,
+        left: renderBox.localToGlobal(Offset.zero).dx - 20,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: Offset(0, renderBox.size.height + 30),
+          child: AddressSuggestionsOverlay(
+            predictions: _predictions,
+            isSearching: _isSearching,
+            onSelectPlace: (placeId) {
+              _selectPlace(placeId);
+              _removeOverlay();
+              _addressFocusNode.unfocus();
+            },
           ),
-        );
-      },
+        ),
+      ),
     );
 
-    Overlay.of(context).insert(overlay);
-    _overlayEntry = overlay;
+    Overlay.of(context).insert(_overlayEntry!);
   }
 
   void _removeOverlay() {
@@ -377,95 +231,74 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         ],
       );
 
-      if (place.place?.addressComponents != null) {
-        String streetNumber = '';
-        String route = '';
-        String locality = '';
-        String state = '';
-        String postcode = '';
-        String address = '';
+      if (place.place?.addressComponents == null) return;
 
-        // 🧩 Keep user's typed unit number (e.g., "12/") if it exists
-        final currentText = _addressController.text.trim();
-        String prefix = '';
-        if (currentText.contains('/')) {
-          prefix = currentText.split('/').first.trim() + '/';
-        }
+      final components = _parseAddressComponents(
+        place.place!.addressComponents!,
+      );
+      final prefix = _extractUnitPrefix(_controllers['address']!.text);
 
-        for (final component in place.place!.addressComponents!) {
-          final types = component.types;
+      setState(() {
+        _controllers['address']!.text = _buildAddress(
+          components,
+          prefix,
+          place.place?.name,
+        );
+        _controllers['city']!.text = components['locality'] ?? '';
+        _controllers['state']!.text = components['state'] ?? '';
+        _controllers['postcode']!.text = components['postcode'] ?? '';
+        _predictions = [];
+      });
 
-          if (types.contains('street_number')) {
-            streetNumber = component.name;
-          } else if (types.contains('route')) {
-            route = component.name;
-          } else if (types.contains('locality')) {
-            locality = component.name;
-          } else if (types.contains('administrative_area_level_1')) {
-            state = component.shortName;
-          } else if (types.contains('postal_code')) {
-            postcode = component.name;
-          }
-        }
-
-        // 🏠 If route is found, it's a street address — keep prefix (unit number)
-        if (route.isNotEmpty) {
-          address =
-              '${prefix}${streetNumber.isNotEmpty ? "$streetNumber " : ""}$route';
-        }
-        // 🧭 Otherwise, use the place name (like “Sydney Airport”)
-        else if (place.place?.name != null) {
-          address = '${prefix}${place.place!.name!}';
-        }
-        // 🏙️ Fallback to locality (e.g., “Mascot”) if all else fails
-        else if (locality.isNotEmpty) {
-          address = '${prefix}${locality}';
-        }
-
-        setState(() {
-          _addressController.text = address.trim();
-          _cityController.text = locality;
-          _stateController.text = state;
-          _postcodeController.text = postcode;
-          _predictions = [];
-        });
-
-        if (postcode.isNotEmpty) {
-          _fetchPostageRates(postcode);
-        }
-      } else {
-        debugPrint('⚠️ Place has no address components');
+      if (components['postcode']?.isNotEmpty ?? false) {
+        _fetchPostageRates(components['postcode']!);
       }
     } catch (e) {
       debugPrint('❌ Failed to fetch place details: $e');
     }
   }
 
-  void _submitOrder() {
-    if (_formKey.currentState!.validate()) {
-      final customer = Customer(
-        name:
-            '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        address: _addressController.text.trim(),
-        notes: null,
-      );
-
-      final order = _orderService.placeOrder(
-        customerName: customer.name,
-        customerEmail: customer.email,
-        customerPhone: customer.phone,
-        deliveryAddress: customer.address,
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OrderConfirmationScreen(order: order),
-        ),
-      );
+  Map<String, String> _parseAddressComponents(List components) {
+    final result = <String, String>{};
+    for (final component in components) {
+      final types = component.types;
+      if (types.contains('street_number'))
+        result['streetNumber'] = component.name;
+      else if (types.contains('route'))
+        result['route'] = component.name;
+      else if (types.contains('locality'))
+        result['locality'] = component.name;
+      else if (types.contains('administrative_area_level_1'))
+        result['state'] = component.shortName;
+      else if (types.contains('postal_code'))
+        result['postcode'] = component.name;
     }
+    return result;
+  }
+
+  String _extractUnitPrefix(String text) {
+    final trimmed = text.trim();
+    return trimmed.contains('/') ? trimmed.split('/').first.trim() + '/' : '';
+  }
+
+  String _buildAddress(
+    Map<String, String> components,
+    String prefix,
+    String? placeName,
+  ) {
+    final route = components['route'] ?? '';
+    final streetNumber = components['streetNumber'] ?? '';
+    final locality = components['locality'] ?? '';
+
+    if (route.isNotEmpty) {
+      return '$prefix${streetNumber.isNotEmpty ? "$streetNumber " : ""}$route'
+          .trim();
+    } else if (placeName != null) {
+      return '$prefix$placeName'.trim();
+    } else if (locality.isNotEmpty) {
+      return '$prefix$locality'.trim();
+    }
+    return '';
   }
 
   Future<void> _fetchPostageRates(String postcode) async {
@@ -477,62 +310,58 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     });
 
     try {
-      List<PostageRate> allRates = [];
+      Map<String, PostageRate> onDemandOptions = {};
+      double standardTotal = 0.0;
       bool allHaveOnDemand = true;
 
-      // 🧮 Fetch rates for each cart item
       for (final item in _orderService.cartItems) {
-        final sku = item.product.sku;
-        final qty = item.quantity;
-
         try {
-          final rates = await _postageController.fetchRates(sku, postcode, qty);
-          if (rates.isNotEmpty) {
-            allRates.addAll(rates);
+          final rates = await _postageService.fetchPostageRates(
+            sku: item.product.sku,
+            zip: postcode,
+            qty: item.quantity,
+          );
 
-            if (!rates.any((r) => r.code == 'ON_DEMAND')) {
-              allHaveOnDemand = false;
+          if (rates.isEmpty) {
+            allHaveOnDemand = false;
+            continue;
+          }
+
+          final onDemand = rates.where((r) => r.code == 'ON_DEMAND').toList();
+          final standard = rates.where((r) => r.code == 'STANDARD').toList();
+
+          if (onDemand.isNotEmpty) {
+            for (final rate in onDemand) {
+              onDemandOptions[rate.service] = rate;
             }
           } else {
             allHaveOnDemand = false;
           }
+
+          if (standard.isNotEmpty) {
+            standardTotal += standard.first.cost;
+          }
         } catch (e) {
-          debugPrint('⚠️ Error fetching rates for $sku: $e');
           allHaveOnDemand = false;
         }
       }
 
-      if (allHaveOnDemand && allRates.isNotEmpty) {
-        // ✅ Show all unique On Demand options (as free)
-        final unique = allRates
-            .where((r) => r.code == 'ON_DEMAND')
-            .map((r) => r.service)
-            .toSet();
-
-        _postageRates = allRates
-            .where((r) => unique.contains(r.service))
-            .map(
-              (r) => PostageRate(
-                service: r.eta,
-                eta: 'Delivered free today',
-                cost: 0.0,
-                code: 'FREE_ON_DEMAND',
-                sku: 'ALL',
-              ),
-            )
-            .toList();
+      if (allHaveOnDemand && onDemandOptions.isNotEmpty) {
+        _postageRates = onDemandOptions.values.map((rate) {
+          return PostageRate(
+            service: '${rate.service} - ${rate.eta}',
+            eta: 'Delivered free today',
+            cost: 0.0,
+            code: 'FREE_ON_DEMAND',
+            sku: 'ALL',
+          );
+        }).toList();
       } else {
-        // 🚚 Combine all standard postage costs
-        double totalCost = 0.0;
-        for (final rate in allRates.where((r) => r.code != 'ON_DEMAND')) {
-          totalCost += rate.cost;
-        }
-
         _postageRates = [
           PostageRate(
             service: 'Standard Delivery',
             eta: '2–5 Business Days',
-            cost: totalCost,
+            cost: standardTotal,
             code: 'STANDARD',
             sku: 'ALL',
           ),
@@ -545,48 +374,54 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     }
   }
 
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      hintText: label,
-      hintStyle: const TextStyle(
-        fontFamily: _fontFamily,
-        fontSize: 16,
-        color: Colors.black54,
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.white, width: 2),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _primaryColor, width: 3),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
-    );
+  void _submitOrder() {
+    if (_formKey.currentState!.validate()) {
+      final customer = Customer(
+        name:
+            '${_controllers['firstName']!.text.trim()} ${_controllers['lastName']!.text.trim()}',
+        email: _controllers['email']!.text.trim(),
+        phone: _controllers['phone']!.text.trim(),
+        address: _controllers['address']!.text.trim(),
+        notes: null,
+      );
+
+      final order = _orderService.placeOrder(
+        customerName: customer.name,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+        deliveryAddress: customer.address,
+      );
+
+      _orderService.clearSavedCustomerData();
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrderConfirmationScreen(order: order),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _controllers.values.forEach((c) => c.dispose());
+    _addressFocusNode.dispose();
+    _removeOverlay();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 900;
-    final cartItems = _orderService.cartItems;
-    final total = _orderService.cartTotal;
 
     return Material(
       color: Colors.transparent,
       child: Stack(
         children: [
-          // dark overlay
+          // Dark overlay
           FadeTransition(
             opacity: _fadeAnimation,
             child: GestureDetector(
@@ -597,8 +432,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
               child: Container(color: Colors.black.withOpacity(0.5)),
             ),
           ),
-
-          // bottom sheet
+          // Bottom sheet
           SlideTransition(
             position: _slideAnimation,
             child: Align(
@@ -608,10 +442,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                 height: size.height * 0.85,
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black26,
@@ -622,17 +453,17 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                 ),
                 child: Column(
                   children: [
-                    // drag handle
+                    // Drag handle
                     Container(
                       width: 50,
                       height: 5,
                       margin: const EdgeInsets.only(top: 12, bottom: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
-                    // header
+                    // Header
                     Container(
                       padding: EdgeInsets.fromLTRB(
                         isMobile ? 24 : 40,
@@ -640,14 +471,13 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                         isMobile ? 16 : 24,
                         isMobile ? 12 : 20,
                       ),
-                      decoration: const BoxDecoration(color: Colors.white),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             'Checkout',
                             style: TextStyle(
-                              fontFamily: _fontFamily,
+                              fontFamily: CheckoutTheme.fontFamily,
                               fontSize: isMobile ? 28 : 36,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF191919),
@@ -664,49 +494,33 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                         ],
                       ),
                     ),
-                    // main content
+                    // Main content
                     Expanded(
-                      child: Container(
-                        color: Colors.white,
-                        child: SingleChildScrollView(
-                          child: Padding(
-                            padding: EdgeInsets.all(isMobile ? 24 : 40),
-                            child: isMobile
-                                ? Column(
-                                    children: [
-                                      _buildFormSection(isMobile),
-                                      const SizedBox(height: 24),
-                                      _buildSummarySection(
-                                        cartItems,
-                                        total,
-                                        isMobile,
-                                        _postageRates,
-                                        _deliveryMethod,
-                                      ),
-                                    ],
-                                  )
-                                : Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        flex: 3,
-                                        child: _buildFormSection(isMobile),
-                                      ),
-                                      const SizedBox(width: 32),
-                                      Expanded(
-                                        flex: 2,
-                                        child: _buildSummarySection(
-                                          cartItems,
-                                          total,
-                                          isMobile,
-                                          _postageRates,
-                                          _deliveryMethod,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: EdgeInsets.all(isMobile ? 24 : 40),
+                          child: isMobile
+                              ? Column(
+                                  children: [
+                                    _buildFormSection(isMobile),
+                                    const SizedBox(height: 24),
+                                    _buildSummarySection(isMobile),
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: _buildFormSection(isMobile),
+                                    ),
+                                    const SizedBox(width: 32),
+                                    Expanded(
+                                      flex: 2,
+                                      child: _buildSummarySection(isMobile),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
                     ),
@@ -739,129 +553,80 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Email & Phone
-            TextFormField(
-              controller: _emailController,
+            CustomTextField(
+              controller: _controllers['email']!,
+              label: "Email address*",
               keyboardType: TextInputType.emailAddress,
-              decoration: _inputDecoration("Email address*"),
-              style: const TextStyle(fontFamily: _fontFamily, fontSize: 16),
               validator: (v) => v!.isEmpty ? "Email is required" : null,
             ),
             const SizedBox(height: 18),
-            TextFormField(
-              controller: _phoneController,
+            CustomTextField(
+              controller: _controllers['phone']!,
+              label: "Phone number*",
               keyboardType: TextInputType.phone,
-              decoration: _inputDecoration("Phone number*"),
-              style: const TextStyle(fontFamily: _fontFamily, fontSize: 16),
               validator: (v) => v!.isEmpty ? "Phone number is required" : null,
             ),
             const SizedBox(height: 28),
-
-            // Delivery details header
-            Text(
-              'Delivery Details',
-              style: TextStyle(
-                fontFamily: _fontFamily,
-                fontSize: isMobile ? 22 : 26,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF191919),
-              ),
-            ),
+            SectionTitle('Delivery Details', isMobile: isMobile),
             const SizedBox(height: 16),
-            // delivery options (kept visually consistent)
-            _buildDeliveryOptions(),
+            DeliveryOptions(
+              isLoading: _isLoadingRates,
+              rates: _postageRates,
+              selectedMethod: _deliveryMethod,
+              onMethodChanged: (method) {
+                setState(() => _deliveryMethod = method);
+                _saveData();
+              },
+            ),
             const SizedBox(height: 28),
-
-            // Billing Details header
-            Text(
-              'Billing Details',
-              style: TextStyle(
-                fontFamily: _fontFamily,
-                fontSize: isMobile ? 22 : 26,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF191919),
-              ),
-            ),
+            SectionTitle('Billing Details', isMobile: isMobile),
             const SizedBox(height: 16),
-
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    controller: _firstNameController,
-                    decoration: _inputDecoration("First Name*"),
-                    style: const TextStyle(
-                      fontFamily: _fontFamily,
-                      fontSize: 16,
-                    ),
+                  child: CustomTextField(
+                    controller: _controllers['firstName']!,
+                    label: "First Name*",
                     validator: (v) => v!.isEmpty ? "Required" : null,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextFormField(
-                    controller: _lastNameController,
-                    decoration: _inputDecoration("Last Name*"),
-                    style: const TextStyle(
-                      fontFamily: _fontFamily,
-                      fontSize: 16,
-                    ),
+                  child: CustomTextField(
+                    controller: _controllers['lastName']!,
+                    label: "Last Name*",
                     validator: (v) => v!.isEmpty ? "Required" : null,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Address field with CompositedTransformTarget so overlay positions correctly
             CompositedTransformTarget(
               link: _layerLink,
-              child: Stack(
-                children: [
-                  TextFormField(
-                    controller: _addressController,
-                    focusNode: _addressFocusNode,
-                    decoration: _inputDecoration("Billing address*"),
-                    style: const TextStyle(
-                      fontFamily: _fontFamily,
-                      fontSize: 16,
-                    ),
-                    validator: (v) => v!.isEmpty ? "Address is required" : null,
-                    keyboardType: TextInputType.streetAddress,
-                    readOnly: false,
-                    autofocus: false,
-                  ),
-                ],
+              child: CustomTextField(
+                controller: _controllers['address']!,
+                label: "Billing address*",
+                focusNode: _addressFocusNode,
+                validator: (v) => v!.isEmpty ? "Address is required" : null,
               ),
             ),
-
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   flex: 2,
-                  child: TextFormField(
-                    controller: _aptController,
-                    decoration: _inputDecoration(
-                      "Apartment, suite. (optional)",
-                    ),
-                    style: const TextStyle(
-                      fontFamily: _fontFamily,
-                      fontSize: 16,
-                    ),
+                  child: CustomTextField(
+                    controller: _controllers['apt']!,
+                    label: "Apartment, suite. (optional)",
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextFormField(
-                    controller: _postcodeController,
+                  child: CustomTextField(
+                    controller: _controllers['postcode']!,
+                    label: "Postcode*",
                     keyboardType: TextInputType.number,
-                    decoration: _inputDecoration("Postcode*"),
-                    style: const TextStyle(
-                      fontFamily: _fontFamily,
-                      fontSize: 16,
-                    ),
-                    onChanged: (v) => _fetchPostageRates(v),
+                    onChanged: _fetchPostageRates,
                   ),
                 ),
               ],
@@ -870,346 +635,36 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    controller: _cityController,
-                    decoration: _inputDecoration("City"),
-                    style: const TextStyle(
-                      fontFamily: _fontFamily,
-                      fontSize: 16,
-                    ),
+                  child: CustomTextField(
+                    controller: _controllers['city']!,
+                    label: "City",
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextFormField(
-                    controller: _stateController,
-                    decoration: _inputDecoration("State"),
-                    style: const TextStyle(
-                      fontFamily: _fontFamily,
-                      fontSize: 16,
-                    ),
+                  child: CustomTextField(
+                    controller: _controllers['state']!,
+                    label: "State",
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-
-            // Buttons (kept visually identical)
-            SizedBox(
-              width: double.infinity,
-              height: 58,
-              child: ElevatedButton(
-                onPressed: _submitOrder,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  'Pay now on terminal',
-                  style: TextStyle(
-                    fontFamily: _fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 58,
-              child: OutlinedButton(
-                onPressed: _submitOrder,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: _primaryColor, width: 2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text(
-                      'Pay later with NDIS',
-                      style: TextStyle(
-                        fontFamily: _fontFamily,
-                        fontSize: 16,
-                        color: _primaryColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    // small badge
-                    SizedBox(
-                      width: 36,
-                      height: 22,
-                      child: Center(
-                        child: Text(
-                          'ndis',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            SubmitButtons(onSubmit: _submitOrder),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDeliveryOptions() {
-    if (_isLoadingRates) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(12),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-    if (_postageRates.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          'Enter your postcode to view delivery options.',
-          style: TextStyle(fontStyle: FontStyle.italic),
-        ),
-      );
-    }
-
-    return Column(
-      children: _postageRates.map((rate) {
-        final isSelected = _deliveryMethod == rate.service.toLowerCase();
-
-        // 🪄 Split the label
-        final parts = rate.service.split(' - ');
-        final title = parts.isNotEmpty ? parts.first.trim() : rate.service;
-        final subtitle = parts.length > 1 ? parts.last.trim() : '';
-
-        // 🏷️ Handle cost text
-        final displayCost =
-            (rate.service.toLowerCase().contains('on demand') &&
-                rate.cost == 4.95)
-            ? 0.0
-            : rate.cost;
-        final costText = displayCost == 0.0
-            ? 'FREE'
-            : '\$${displayCost.toStringAsFixed(2)}';
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: InkWell(
-            onTap: () =>
-                setState(() => _deliveryMethod = rate.service.toLowerCase()),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? _primaryColor.withOpacity(0.08)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSelected ? _primaryColor : Colors.grey.shade300,
-                  width: isSelected ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // 🔘 Radio button on the LEFT
-                  Radio<String>(
-                    value: rate.service.toLowerCase(),
-                    groupValue: _deliveryMethod,
-                    onChanged: (val) => setState(
-                      () => _deliveryMethod = val ?? _deliveryMethod,
-                    ),
-                    activeColor: _primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-
-                  // 📦 Text + FREE on the right
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Texts
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: TextStyle(
-                                fontFamily: _fontFamily,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              subtitle,
-                              style: TextStyle(
-                                fontFamily: _fontFamily,
-                                fontSize: 13,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // 💰 Cost text on the far right
-                        Text(
-                          costText,
-                          style: TextStyle(
-                            fontFamily: _fontFamily,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: displayCost == 0.0
-                                ? Colors.green.shade700
-                                : const Color(0xFF191919),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildSummarySection(
-    List cartItems,
-    double total,
-    bool isMobile,
-    List<PostageRate> rates,
-    String deliveryMethod,
-  ) {
-    final selectedRate = rates.firstWhere(
-      (r) => r.service.toLowerCase() == deliveryMethod,
-      orElse: () => PostageRate(
-        service: 'Standard',
-        eta: '',
-        cost: 0.0,
-        code: '',
-        sku: '',
-      ),
-    );
-    final grandTotal = total + selectedRate.cost;
-
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 20 : 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Summary',
-                style: TextStyle(
-                  fontFamily: _fontFamily,
-                  fontSize: isMobile ? 20 : 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Edit Cart',
-                  style: TextStyle(color: _primaryColor),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ...cartItems.map((item) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.product.name ?? 'Product',
-                      style: const TextStyle(fontSize: 16),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Text(
-                    '\$${item.totalPrice.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const Divider(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Subtotal'),
-              Text('\$${total.toStringAsFixed(2)}'),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Shipping'),
-              Text(
-                selectedRate.cost == 0
-                    ? 'FREE'
-                    : '\$${selectedRate.cost.toStringAsFixed(2)}',
-                style: TextStyle(
-                  color: selectedRate.cost == 0
-                      ? _primaryColor
-                      : const Color(0xFF191919),
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                '\$${grandTotal.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: _primaryColor,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+  Widget _buildSummarySection(bool isMobile) {
+    return OrderSummary(
+      cartItems: _orderService.cartItems,
+      subtotal: _orderService.cartTotal,
+      rates: _postageRates,
+      deliveryMethod: _deliveryMethod,
+      isMobile: isMobile,
+      onEditCart: () => Navigator.pop(context),
     );
   }
 }
