@@ -193,60 +193,71 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
     final overlay = OverlayEntry(
       builder: (context) {
-        final width = size.width; // 👈 match field width exactly
-
         return Positioned(
-          left: offset.dx,
-          top: offset.dy + size.height + 6, // 👈 right below the textfield
-          width: width,
+          width: size.width + 44,
+          left: offset.dx - 20,
           child: CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
-            offset: Offset(0, size.height + 6),
+            offset: Offset(0, size.height + 30), // small gap below TextField
             child: Material(
               color: Colors.transparent,
               child: Container(
                 constraints: const BoxConstraints(maxHeight: 350),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+
                   border: Border.all(color: Colors.grey.shade300),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // 🧭 Header “SUGGESTIONS”
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'SUGGESTIONS',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          letterSpacing: 1.2,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+
+                    // 🔍 List of suggestions
                     Expanded(
                       child: _isSearching
-                          ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    'Searching...',
-                                    style: TextStyle(fontFamily: _fontFamily),
-                                  ),
-                                ],
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             )
                           : ListView.separated(
                               padding: const EdgeInsets.symmetric(
-                                vertical: 8.0,
+                                vertical: 4.0,
                               ),
                               itemCount: _predictions.length,
                               separatorBuilder: (_, __) => Divider(
@@ -255,37 +266,59 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                               ),
                               itemBuilder: (context, index) {
                                 final p = _predictions[index];
-                                final title = p.primaryText;
-                                final subtitle = p.secondaryText;
-                                return ListTile(
-                                  leading: const Icon(
-                                    Icons.location_on,
-                                    color: _primaryColor,
-                                  ),
-                                  title: Text(
-                                    title,
-                                    style: const TextStyle(
-                                      fontFamily: _fontFamily,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    subtitle,
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontFamily: _fontFamily,
-                                    ),
-                                  ),
+                                return InkWell(
                                   onTap: () {
                                     _selectPlace(p.placeId);
                                     _removeOverlay();
                                     _addressFocusNode.unfocus();
                                   },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on_outlined,
+                                          color: Colors.grey,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                p.primaryText,
+                                                style: const TextStyle(
+                                                  fontFamily: 'Poppins',
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                p.secondaryText,
+                                                style: TextStyle(
+                                                  fontFamily: 'Poppins',
+                                                  fontSize: 13,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 );
                               },
                             ),
                     ),
-                    // Footer
+
+                    // 🪄 “Powered by Google”
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
@@ -293,10 +326,9 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(14),
-                          bottomRight: Radius.circular(14),
+                        color: Colors.grey.shade100,
+                        borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(12),
                         ),
                         border: Border(
                           top: BorderSide(
@@ -305,14 +337,11 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                           ),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Image.asset(
-                            'assets/powered_by_google_on_white.png',
-                            height: 18,
-                          ),
-                        ],
+                      alignment: Alignment.centerRight,
+                      child: Image.network(
+                        'https://developers.google.com/maps/documentation/images/powered_by_google_on_white.png',
+                        height: 18,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ],
@@ -341,7 +370,11 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     try {
       final place = await _places!.fetchPlace(
         placeId,
-        fields: [PlaceField.Address, PlaceField.AddressComponents],
+        fields: [
+          PlaceField.Address,
+          PlaceField.AddressComponents,
+          PlaceField.Name,
+        ],
       );
 
       if (place.place?.addressComponents != null) {
@@ -350,9 +383,18 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         String locality = '';
         String state = '';
         String postcode = '';
+        String address = '';
+
+        // 🧩 Keep user's typed unit number (e.g., "12/") if it exists
+        final currentText = _addressController.text.trim();
+        String prefix = '';
+        if (currentText.contains('/')) {
+          prefix = currentText.split('/').first.trim() + '/';
+        }
 
         for (final component in place.place!.addressComponents!) {
           final types = component.types;
+
           if (types.contains('street_number')) {
             streetNumber = component.name;
           } else if (types.contains('route')) {
@@ -366,15 +408,31 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
           }
         }
 
+        // 🏠 If route is found, it's a street address — keep prefix (unit number)
+        if (route.isNotEmpty) {
+          address =
+              '${prefix}${streetNumber.isNotEmpty ? "$streetNumber " : ""}$route';
+        }
+        // 🧭 Otherwise, use the place name (like “Sydney Airport”)
+        else if (place.place?.name != null) {
+          address = '${prefix}${place.place!.name!}';
+        }
+        // 🏙️ Fallback to locality (e.g., “Mascot”) if all else fails
+        else if (locality.isNotEmpty) {
+          address = '${prefix}${locality}';
+        }
+
         setState(() {
-          _addressController.text = '$streetNumber $route'.trim();
+          _addressController.text = address.trim();
           _cityController.text = locality;
           _stateController.text = state;
           _postcodeController.text = postcode;
           _predictions = [];
         });
 
-        if (postcode.isNotEmpty) _fetchPostageRates(postcode);
+        if (postcode.isNotEmpty) {
+          _fetchPostageRates(postcode);
+        }
       } else {
         debugPrint('⚠️ Place has no address components');
       }
@@ -420,61 +478,69 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
     try {
       List<PostageRate> allRates = [];
+      bool allHaveOnDemand = true;
 
       // 🧮 Fetch rates for each cart item
       for (final item in _orderService.cartItems) {
         final sku = item.product.sku;
         final qty = item.quantity;
-        final rates = await _postageController.fetchRates(sku, postcode, qty);
-        if (rates.isNotEmpty) allRates.addAll(rates);
+
+        try {
+          final rates = await _postageController.fetchRates(sku, postcode, qty);
+          if (rates.isNotEmpty) {
+            allRates.addAll(rates);
+
+            if (!rates.any((r) => r.code == 'ON_DEMAND')) {
+              allHaveOnDemand = false;
+            }
+          } else {
+            allHaveOnDemand = false;
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error fetching rates for $sku: $e');
+          allHaveOnDemand = false;
+        }
       }
 
-      // 🚚 Separate On Demand and Standard rates
-      final onDemandRates = allRates
-          .where((r) => r.service.toLowerCase().contains('on demand'))
-          .toList();
+      if (allHaveOnDemand && allRates.isNotEmpty) {
+        // ✅ Show all unique On Demand options (as free)
+        final unique = allRates
+            .where((r) => r.code == 'ON_DEMAND')
+            .map((r) => r.service)
+            .toSet();
 
-      final standardRates = allRates
-          .where((r) => !r.service.toLowerCase().contains('on demand'))
-          .toList();
+        _postageRates = allRates
+            .where((r) => unique.contains(r.service))
+            .map(
+              (r) => PostageRate(
+                service: r.eta,
+                eta: 'Delivered free today',
+                cost: 0.0,
+                code: 'FREE_ON_DEMAND',
+                sku: 'ALL',
+              ),
+            )
+            .toList();
+      } else {
+        // 🚚 Combine all standard postage costs
+        double totalCost = 0.0;
+        for (final rate in allRates.where((r) => r.code != 'ON_DEMAND')) {
+          totalCost += rate.cost;
+        }
 
-      if (onDemandRates.isNotEmpty && standardRates.isEmpty) {
-        // ✅ CASE 1: All items have On Demand — show only ONE free option
         _postageRates = [
           PostageRate(
-            service: 'On Demand Delivery',
-            eta: 'Free shipping applied',
-            cost: 0.0,
-            code: 'FREE',
+            service: 'Standard Delivery',
+            eta: '2–5 Business Days',
+            cost: totalCost,
+            code: 'STANDARD',
             sku: 'ALL',
           ),
         ];
-      } else {
-        // 🚚 CASE 2: At least one item has Standard Postage — combine all costs
-        final Map<String, PostageRate> groupedRates = {};
-
-        for (final rate in standardRates) {
-          final key = rate.service.toLowerCase();
-          if (groupedRates.containsKey(key)) {
-            groupedRates[key] = PostageRate(
-              service: rate.service,
-              eta: rate.eta,
-              cost: groupedRates[key]!.cost + rate.cost,
-              code: rate.code,
-              sku: 'combined',
-            );
-          } else {
-            groupedRates[key] = rate;
-          }
-        }
-
-        _postageRates = groupedRates.values.toList()
-          ..sort((a, b) => a.cost.compareTo(b.cost)); // cheapest first
       }
-
-      setState(() => _isLoadingRates = false);
     } catch (e) {
       debugPrint('❌ Failed to fetch postage rates: $e');
+    } finally {
       setState(() => _isLoadingRates = false);
     }
   }
@@ -919,6 +985,13 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     return Column(
       children: _postageRates.map((rate) {
         final isSelected = _deliveryMethod == rate.service.toLowerCase();
+
+        // 🪄 Split the label
+        final parts = rate.service.split(' - ');
+        final title = parts.isNotEmpty ? parts.first.trim() : rate.service;
+        final subtitle = parts.length > 1 ? parts.last.trim() : '';
+
+        // 🏷️ Handle cost text
         final displayCost =
             (rate.service.toLowerCase().contains('on demand') &&
                 rate.cost == 4.95)
@@ -929,42 +1002,84 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
             : '\$${displayCost.toStringAsFixed(2)}';
 
         return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? _primaryColor.withOpacity(0.08)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? _primaryColor : Colors.grey.shade300,
-                width: isSelected ? 2 : 1,
-              ),
-            ),
-            child: RadioListTile<String>(
-              value: rate.service.toLowerCase(),
-              groupValue: _deliveryMethod,
-              onChanged: (val) =>
-                  setState(() => _deliveryMethod = val ?? _deliveryMethod),
-              activeColor: _primaryColor,
-              title: Text(
-                rate.service,
-                style: TextStyle(
-                  fontFamily: _fontFamily,
-                  fontWeight: FontWeight.w700,
+          padding: const EdgeInsets.only(bottom: 10),
+          child: InkWell(
+            onTap: () =>
+                setState(() => _deliveryMethod = rate.service.toLowerCase()),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? _primaryColor.withOpacity(0.08)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected ? _primaryColor : Colors.grey.shade300,
+                  width: isSelected ? 2 : 1,
                 ),
               ),
-              subtitle: Text(rate.eta, style: const TextStyle(fontSize: 13)),
-              secondary: Text(
-                costText,
-                style: TextStyle(
-                  fontFamily: _fontFamily,
-                  fontWeight: FontWeight.bold,
-                  color: displayCost == 0.0
-                      ? Colors.green.shade700
-                      : const Color(0xFF191919),
-                ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 🔘 Radio button on the LEFT
+                  Radio<String>(
+                    value: rate.service.toLowerCase(),
+                    groupValue: _deliveryMethod,
+                    onChanged: (val) => setState(
+                      () => _deliveryMethod = val ?? _deliveryMethod,
+                    ),
+                    activeColor: _primaryColor,
+                  ),
+                  const SizedBox(width: 8),
+
+                  // 📦 Text + FREE on the right
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Texts
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontFamily: _fontFamily,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontFamily: _fontFamily,
+                                fontSize: 13,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // 💰 Cost text on the far right
+                        Text(
+                          costText,
+                          style: TextStyle(
+                            fontFamily: _fontFamily,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: displayCost == 0.0
+                                ? Colors.green.shade700
+                                : const Color(0xFF191919),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

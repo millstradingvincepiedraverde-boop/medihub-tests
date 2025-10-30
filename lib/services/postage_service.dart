@@ -7,70 +7,66 @@ class PostageService {
       'https://api.millsbrands.com.au/api/v1/postage-calculator';
 
   /// ✅ Fetch all postage rates from Mills Brands API
-  Future<List<PostageRate>> fetchPostageRates({
-    required String sku,
-    required String zip,
-    required int qty,
-  }) async {
-    final uri = Uri.parse('$_baseUrl?sku=$sku&zip=$zip&qty=$qty&services=all');
-    print('🌐 [PostageService] Fetching postage rates from: $uri');
+ Future<List<PostageRate>> fetchPostageRates({
+  required String sku,
+  required String zip,
+  required int qty,
+}) async {
+  final uri = Uri.parse(
+    'https://api.millsbrands.com.au/api/v1/postage-calculator'
+    '?sku=$sku&zip=$zip&qty=$qty&services=all',
+  );
 
-    try {
-      final response = await http.get(uri);
-      print('📦 [PostageService] Response status: ${response.statusCode}');
+  print('🌐 [PostageService] Fetching postage rates from: $uri');
 
-      if (response.statusCode != 200) {
-        print(
-          '❌ [PostageService] Failed to fetch rates. Body: ${response.body}',
-        );
-        throw Exception('Failed to fetch postage rates');
-      }
+  try {
+    final response = await http.get(uri);
+    print('📦 [PostageService] Response status: ${response.statusCode}');
 
-      final body = jsonDecode(response.body);
-      print('✅ [PostageService] Response parsed successfully.');
-
-      final List<PostageRate> rates = [];
-
-      // 🚚 Handle On Demand section
-      if (body['onDemand'] != null && body['onDemand'] is List) {
-        final onDemand = body['onDemand'] as List;
-        print('📊 [PostageService] Found ${onDemand.length} on-demand rate(s)');
-        for (final rate in onDemand) {
-          rates.add(
-            PostageRate(
-              service: rate['internal_label'] ?? 'On Demand',
-              eta: rate['label'] ?? 'Delivered Tomorrow',
-              cost: 4.95, // store original cost (for logic), not free yet
-              code: 'ON_DEMAND',
-              sku: sku,
-            ),
-          );
-        }
-      }
-
-      // 📦 Handle normal postage if no on-demand found
-      if (rates.isEmpty) {
-        final postageCost =
-            double.tryParse(body['postage']?.toString() ?? '0') ?? 0.0;
-        print('📦 [PostageService] Using standard postage: $postageCost');
-
-        rates.add(
-          PostageRate(
-            service: 'Standard Delivery',
-            cost: postageCost,
-            sku: sku,
-            eta: 'N/A',
-            code: '',
-          ),
-        );
-      }
-
-      return rates;
-    } catch (e) {
-      print('🚨 [PostageService] Error: $e');
-      rethrow;
+    if (response.statusCode != 200) {
+      print('❌ [PostageService] Failed to fetch rates: ${response.body}');
+      throw Exception('Failed to fetch postage rates');
     }
+
+    final data = jsonDecode(response.body);
+    print('✅ [PostageService] Parsed successfully: $data');
+
+    final List<PostageRate> rates = [];
+
+    // 🎯 Check On Demand first
+    if (data['onDemand'] != null && data['onDemand'] is List) {
+      for (final option in data['onDemand']) {
+        rates.add(PostageRate(
+          service: option['internal_label'] ?? 'On Demand',
+          eta: option['label'] ?? '',
+          cost: double.tryParse(option['cost']?.toString() ?? '0') ?? 0,
+          code: 'ON_DEMAND',
+          sku: sku,
+        ));
+      }
+    }
+
+    // 📦 Add standard postage fallback
+    final postageCost =
+        double.tryParse(data['postage']?.toString() ?? '0') ?? 0.0;
+
+    if (rates.isEmpty || postageCost > 0) {
+      rates.add(PostageRate(
+        service: 'Standard Delivery',
+        eta: '2–5 Business Days',
+        cost: postageCost,
+        code: 'STANDARD',
+        sku: sku,
+      ));
+    }
+
+    return rates;
+  } catch (e) {
+    print('🚨 [PostageService] Error: $e');
+    rethrow;
   }
+}
+
 
   /// ✅ Compute Shopify-like rates (decides if FREE on-demand or standard)
   Future<Map<String, dynamic>> calculateShipping(
