@@ -1,6 +1,8 @@
+// ignore_for_file: curly_braces_in_flow_control_structures, deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'package:medihub_tests/models/customer.dart';
 import 'package:medihub_tests/models/postage_rate.dart';
 import 'package:medihub_tests/screens/checkout/order_confirmation_screen.dart';
@@ -23,12 +25,11 @@ class CustomerInfoScreen extends StatefulWidget {
 
 class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     with SingleTickerProviderStateMixin {
-  // Services
   final _formKey = GlobalKey<FormState>();
   final _orderService = OrderService();
   final _postageService = PostageService();
 
-  // Controllers Map
+  // 🧠 Controllers for all inputs
   final _controllers = {
     'email': TextEditingController(),
     'phone': TextEditingController(),
@@ -41,12 +42,11 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     'state': TextEditingController(),
   };
 
-  // State
   String _deliveryMethod = 'standard';
   List<PostageRate> _postageRates = [];
   bool _isLoadingRates = false;
 
-  // Animation
+  // Animations
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
@@ -59,15 +59,26 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+  final customer = Provider.of<OrderService>(context, listen: false).customer;
+
+  _controllers['email']?.text = customer.email;
+  _controllers['phone']?.text = customer.phone;
+  _controllers['firstName']?.text = customer.firstName;
+  _controllers['lastName']?.text = customer.lastName;
+  _controllers['address']?.text = customer.address;
+  _controllers['apt']?.text = customer.apartment;
+  _controllers['postcode']?.text = customer.postcode;
+  _controllers['city']?.text = customer.city;
+  _controllers['state']?.text = customer.state;
     _initAnimation();
-    _loadSavedData();
     _setupListeners();
     _initializePlaces();
   }
 
+  // 🪄 Animation setup
   void _initAnimation() {
     _controller = AnimationController(
       vsync: this,
@@ -84,12 +95,28 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     _controller.forward();
   }
 
+  // 🎧 Input listeners
   void _setupListeners() {
     _controllers['address']!.addListener(_onAddressChanged);
     _addressFocusNode.addListener(_onAddressFocusChanged);
-    _controllers.values.forEach((c) => c.addListener(_saveData));
   }
 
+  // 🗺️ Google Places setup
+  Future<void> _initializePlaces() async {
+    try {
+      final apiKey =
+          dotenv.env['GOOGLE_PLACES_API_KEY'] ??
+          dotenv.env['GOOGLE_API_KEY'] ??
+          '';
+      if (apiKey.isEmpty) return;
+      _places = FlutterGooglePlacesSdk(apiKey);
+      await _places!.isInitialized();
+    } catch (e) {
+      debugPrint('❌ Failed to initialize Google Places SDK: $e');
+    }
+  }
+
+  // 🏠 Address logic
   void _onAddressChanged() {
     final query = _controllers['address']!.text.trim();
     if (query.length >= 3) {
@@ -107,42 +134,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
       Future.delayed(const Duration(milliseconds: 100), _removeOverlay);
     } else if (_predictions.isNotEmpty) {
       _showOverlay();
-    }
-  }
-
-  void _loadSavedData() {
-    final saved = _orderService.savedCustomerData;
-    if (saved != null) {
-      saved.forEach((key, value) {
-        if (_controllers.containsKey(key)) {
-          _controllers[key]!.text = value;
-        }
-      });
-      _deliveryMethod = saved['deliveryMethod'] ?? 'standard';
-      if (_controllers['postcode']!.text.length >= 4) {
-        _fetchPostageRates(_controllers['postcode']!.text);
-      }
-    }
-  }
-
-  void _saveData() {
-    _orderService.saveCustomerData({
-      ..._controllers.map((key, controller) => MapEntry(key, controller.text)),
-      'deliveryMethod': _deliveryMethod,
-    });
-  }
-
-  Future<void> _initializePlaces() async {
-    try {
-      final apiKey =
-          dotenv.env['GOOGLE_PLACES_API_KEY'] ??
-          dotenv.env['GOOGLE_API_KEY'] ??
-          '';
-      if (apiKey.isEmpty) return;
-      _places = FlutterGooglePlacesSdk(apiKey);
-      await _places!.isInitialized();
-    } catch (e) {
-      debugPrint('❌ Failed to initialize Google Places SDK: $e');
     }
   }
 
@@ -167,11 +158,10 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         _isSearching = false;
       });
 
-      if (_addressFocusNode.hasFocus && _predictions.isNotEmpty) {
+      if (_addressFocusNode.hasFocus && _predictions.isNotEmpty)
         _showOverlay();
-      } else {
+      else
         _removeOverlay();
-      }
     } catch (e) {
       setState(() {
         _isSearching = false;
@@ -278,7 +268,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
   String _extractUnitPrefix(String text) {
     final trimmed = text.trim();
-    return trimmed.contains('/') ? trimmed.split('/').first.trim() + '/' : '';
+    return trimmed.contains('/') ? '${trimmed.split('/').first.trim()}/' : '';
   }
 
   String _buildAddress(
@@ -301,9 +291,9 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     return '';
   }
 
+  // 🚚 Fetch delivery rates
   Future<void> _fetchPostageRates(String postcode) async {
     if (postcode.length < 4) return;
-
     setState(() {
       _isLoadingRates = true;
       _postageRates.clear();
@@ -374,25 +364,39 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     }
   }
 
+  // 🧾 Submit order
   void _submitOrder() {
     if (_formKey.currentState!.validate()) {
-      final customer = Customer(
-        name:
-            '${_controllers['firstName']!.text.trim()} ${_controllers['lastName']!.text.trim()}',
+      final customer = Provider.of<Customer>(context, listen: false);
+      final orderService = Provider.of<OrderService>(context, listen: false);
+
+      // Update current customer data (in memory only)
+      customer.update(
+        firstName: _controllers['firstName']!.text.trim(),
+        lastName: _controllers['lastName']!.text.trim(),
         email: _controllers['email']!.text.trim(),
         phone: _controllers['phone']!.text.trim(),
         address: _controllers['address']!.text.trim(),
-        notes: null,
+        apartment: _controllers['apt']!.text.trim(),
+        postcode: _controllers['postcode']!.text.trim(),
+        city: _controllers['city']!.text.trim(),
+        state: _controllers['state']!.text.trim(),
+        deliveryMethod: _deliveryMethod,
       );
 
-      final order = _orderService.placeOrder(
-        customerName: customer.name,
-        customerEmail: customer.email,
-        customerPhone: customer.phone,
-        deliveryAddress: customer.address,
-      );
+      if (!customer.isValid()) {
+        final errors = customer.getValidationErrors();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errors.values.join('\n')),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
-      _orderService.clearSavedCustomerData();
+      final order = orderService.placeOrder();
+      customer.reset(); // clear memory after order
 
       Navigator.pushReplacement(
         context,
@@ -403,15 +407,19 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     }
   }
 
+  // 🧹 Cleanup
   @override
   void dispose() {
     _controller.dispose();
-    _controllers.values.forEach((c) => c.dispose());
+    for (var c in _controllers.values) {
+      c.dispose();
+    }
     _addressFocusNode.dispose();
     _removeOverlay();
     super.dispose();
   }
 
+  // 🧱 UI
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -421,7 +429,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
       color: Colors.transparent,
       child: Stack(
         children: [
-          // Dark overlay
           FadeTransition(
             opacity: _fadeAnimation,
             child: GestureDetector(
@@ -432,7 +439,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
               child: Container(color: Colors.black.withOpacity(0.5)),
             ),
           ),
-          // Bottom sheet
           SlideTransition(
             position: _slideAnimation,
             child: Align(
@@ -464,7 +470,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                       ),
                     ),
                     // Header
-                    Container(
+                    Padding(
                       padding: EdgeInsets.fromLTRB(
                         isMobile ? 24 : 40,
                         isMobile ? 12 : 20,
@@ -494,7 +500,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                         ],
                       ),
                     ),
-                    // Main content
+                    // Content
                     Expanded(
                       child: SingleChildScrollView(
                         child: Padding(
@@ -534,7 +540,11 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     );
   }
 
+  // 🧾 Form section
   Widget _buildFormSection(bool isMobile) {
+    final orderService = Provider.of<OrderService>(context);
+    final customer = orderService.customer;
+
     return Container(
       padding: EdgeInsets.all(isMobile ? 20 : 32),
       decoration: BoxDecoration(
@@ -553,34 +563,44 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --- Contact Info ---
             CustomTextField(
               controller: _controllers['email']!,
               label: "Email address*",
               keyboardType: TextInputType.emailAddress,
               validator: (v) => v!.isEmpty ? "Email is required" : null,
+              onChanged: (v) => customer.email = v,
             ),
             const SizedBox(height: 18),
+
             CustomTextField(
               controller: _controllers['phone']!,
               label: "Phone number*",
               keyboardType: TextInputType.phone,
               validator: (v) => v!.isEmpty ? "Phone number is required" : null,
+              onChanged: (v) => customer.phone = v,
             ),
             const SizedBox(height: 28),
+
+            // --- Delivery Options ---
             SectionTitle('Delivery Details', isMobile: isMobile),
             const SizedBox(height: 16),
+
             DeliveryOptions(
               isLoading: _isLoadingRates,
               rates: _postageRates,
               selectedMethod: _deliveryMethod,
               onMethodChanged: (method) {
                 setState(() => _deliveryMethod = method);
-                _saveData();
+                customer.deliveryMethod = method;
               },
             ),
             const SizedBox(height: 28),
+
+            // --- Billing Info ---
             SectionTitle('Billing Details', isMobile: isMobile),
             const SizedBox(height: 16),
+
             Row(
               children: [
                 Expanded(
@@ -588,6 +608,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                     controller: _controllers['firstName']!,
                     label: "First Name*",
                     validator: (v) => v!.isEmpty ? "Required" : null,
+                    onChanged: (v) => customer.firstName = v,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -596,11 +617,13 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                     controller: _controllers['lastName']!,
                     label: "Last Name*",
                     validator: (v) => v!.isEmpty ? "Required" : null,
+                    onChanged: (v) => customer.lastName = v,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
+
             CompositedTransformTarget(
               link: _layerLink,
               child: CustomTextField(
@@ -608,9 +631,11 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                 label: "Billing address*",
                 focusNode: _addressFocusNode,
                 validator: (v) => v!.isEmpty ? "Address is required" : null,
+                onChanged: (v) => customer.address = v,
               ),
             ),
             const SizedBox(height: 16),
+
             Row(
               children: [
                 Expanded(
@@ -618,6 +643,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                   child: CustomTextField(
                     controller: _controllers['apt']!,
                     label: "Apartment, suite. (optional)",
+                    onChanged: (v) => customer.apartment = v,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -626,18 +652,23 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                     controller: _controllers['postcode']!,
                     label: "Postcode*",
                     keyboardType: TextInputType.number,
-                    onChanged: _fetchPostageRates,
+                    onChanged: (v) {
+                      customer.postcode = v;
+                      _fetchPostageRates(v);
+                    },
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
+
             Row(
               children: [
                 Expanded(
                   child: CustomTextField(
                     controller: _controllers['city']!,
                     label: "City",
+                    onChanged: (v) => customer.city = v,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -645,11 +676,13 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
                   child: CustomTextField(
                     controller: _controllers['state']!,
                     label: "State",
+                    onChanged: (v) => customer.state = v,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
+
             SubmitButtons(onSubmit: _submitOrder),
           ],
         ),

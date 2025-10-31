@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
 import '../models/order.dart';
+import '../models/customer.dart'; // ✅ import your Customer model
 
 class OrderService extends ChangeNotifier {
   static final OrderService _instance = OrderService._internal();
@@ -10,8 +12,8 @@ class OrderService extends ChangeNotifier {
   final List<OrderItem> _cartItems = [];
   final List<Order> _orderHistory = [];
 
-  // 💾 Storage for customer form data
-  Map<String, String>? _savedCustomerData;
+  // ✅ Customer data now only lives in memory for the session
+  final Customer customer = Customer();
 
   bool isProductInCart(String productId) =>
       _cartItems.any((item) => item.product.id == productId);
@@ -21,12 +23,11 @@ class OrderService extends ChangeNotifier {
 
   int get cartItemCount =>
       _cartItems.fold(0, (sum, item) => sum + item.quantity);
+
   double get cartTotal =>
       _cartItems.fold(0, (sum, item) => sum + item.totalPrice);
 
-  // 💾 Getter for saved customer data
-  Map<String, String>? get savedCustomerData => _savedCustomerData;
-
+  // 🛒 CART MANAGEMENT --------------------------------------------------
   void addToCart(Product product) {
     final existingIndex = _cartItems.indexWhere(
       (item) => item.product.id == product.id,
@@ -61,31 +62,53 @@ class OrderService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 💾 Save customer data
-  void saveCustomerData(Map<String, String> data) {
-    _savedCustomerData = data;
-    // No need to notifyListeners() since this doesn't affect UI directly
+  // 💾 CUSTOMER DATA (now saved in session storage) ---------------------
+  Future<void> saveCustomerToSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('email', customer.email ?? '');
+    await prefs.setString('phone', customer.phone ?? '');
+    await prefs.setString('firstName', customer.firstName ?? '');
+    await prefs.setString('lastName', customer.lastName ?? '');
+    await prefs.setString('address', customer.address ?? '');
+    await prefs.setString('apartment', customer.apartment ?? '');
+    await prefs.setString('city', customer.city ?? '');
+    await prefs.setString('state', customer.state ?? '');
+    await prefs.setString('postcode', customer.postcode ?? '');
   }
 
-  // 💾 Clear saved customer data (call after successful order)
-  void clearSavedCustomerData() {
-    _savedCustomerData = null;
+  Future<void> loadCustomerFromSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    customer
+      ..email = prefs.getString('email') ?? ''
+      ..phone = prefs.getString('phone') ?? ''
+      ..firstName = prefs.getString('firstName') ?? ''
+      ..lastName = prefs.getString('lastName') ?? ''
+      ..address = prefs.getString('address') ?? ''
+      ..apartment = prefs.getString('apartment') ?? ''
+      ..city = prefs.getString('city') ?? ''
+      ..state = prefs.getString('state') ?? ''
+      ..postcode = prefs.getString('postcode') ?? '';
+    notifyListeners();
   }
 
-  Order placeOrder({
-    required String customerName,
-    required String customerEmail,
-    required String customerPhone,
-    required String deliveryAddress,
-  }) {
+  void clearCustomer() async {
+    customer.reset();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    notifyListeners();
+  }
+
+  // 🧾 ORDER LOGIC -----------------------------------------------------
+  Order placeOrder() {
     final order = Order(
       id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
       items: List.from(_cartItems),
       orderDate: DateTime.now(),
-      customerName: customerName,
-      customerEmail: customerEmail,
-      customerPhone: customerPhone,
-      deliveryAddress: deliveryAddress,
+      customerName: customer.fullName,
+      customerEmail: customer.email,
+      customerPhone: customer.phone,
+      deliveryAddress:
+          '${customer.address}, ${customer.city}, ${customer.state} ${customer.postcode}',
     );
 
     _orderHistory.add(order);
