@@ -294,7 +294,7 @@ class _CartScreenState extends State<CartScreen>
                                         // NOTE: If you always have the local asset present, you can directly use Lottie.asset('assets/lottie/empty_cart.json')
                                         try {
                                           return Lottie.asset(
-                                            'assets/lottie/empty_cart.json',
+                                            'assets/animations/empty_cart.json',
                                             width: 180,
                                             height: 180,
                                             repeat: false,
