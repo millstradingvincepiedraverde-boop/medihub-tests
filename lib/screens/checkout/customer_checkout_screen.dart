@@ -59,26 +59,33 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
 
-@override
-void initState() {
-  super.initState();
-  final customer = Provider.of<OrderService>(context, listen: false).customer;
+  @override
+  void initState() {
+    super.initState();
+    final customer = Provider.of<OrderService>(context, listen: false).customer;
 
-  _controllers['email']?.text = customer.email;
-  _controllers['phone']?.text = customer.phone;
-  _controllers['firstName']?.text = customer.firstName;
-  _controllers['lastName']?.text = customer.lastName;
-  _controllers['address']?.text = customer.address;
-  _controllers['apt']?.text = customer.apartment;
-  _controllers['postcode']?.text = customer.postcode;
-  _controllers['city']?.text = customer.city;
-  _controllers['state']?.text = customer.state;
+    _controllers['email']?.text = customer.email;
+    _controllers['phone']?.text = customer.phone;
+    _controllers['firstName']?.text = customer.firstName;
+    _controllers['lastName']?.text = customer.lastName;
+    _controllers['address']?.text = customer.address;
+    _controllers['apt']?.text = customer.apartment;
+    _controllers['postcode']?.text = customer.postcode.isNotEmpty
+        ? customer.postcode
+        : '2000'; // ✅ default postcode
+    _controllers['city']?.text = customer.city;
+    _controllers['state']?.text = customer.state;
     _initAnimation();
     _setupListeners();
     _initializePlaces();
+
+    final initialPostcode = customer.postcode.isNotEmpty
+        ? customer.postcode
+        : '2000';
+    _fetchPostageRates(initialPostcode);
   }
 
-  // 🪄 Animation setup
+
   void _initAnimation() {
     _controller = AnimationController(
       vsync: this,
@@ -95,13 +102,12 @@ void initState() {
     _controller.forward();
   }
 
-  // 🎧 Input listeners
+
   void _setupListeners() {
     _controllers['address']!.addListener(_onAddressChanged);
     _addressFocusNode.addListener(_onAddressFocusChanged);
   }
 
-  // 🗺️ Google Places setup
   Future<void> _initializePlaces() async {
     try {
       final apiKey =

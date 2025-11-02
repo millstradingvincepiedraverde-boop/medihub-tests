@@ -38,97 +38,115 @@ class DeliveryOptions extends StatelessWidget {
     }
 
     return Column(
-      children: rates.map((rate) {
-        final isSelected = selectedMethod == rate.service.toLowerCase();
-        final parts = rate.service.split(' - ');
-        final title = parts.isNotEmpty ? parts.first.trim() : rate.service;
-        final subtitle = parts.length > 1 ? parts.last.trim() : '';
-        final displayCost =
-            (rate.service.toLowerCase().contains('on demand') &&
-                rate.cost == 4.95)
-            ? 0.0
-            : rate.cost;
-        final costText = displayCost == 0.0
-            ? 'FREE'
-            : '\$${displayCost.toStringAsFixed(2)}';
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...rates.map((rate) {
+          final isSelected = selectedMethod == rate.service.toLowerCase();
+          final parts = rate.service.split(' - ');
+          final title = parts.isNotEmpty ? parts.first.trim() : rate.service;
+          final subtitle = parts.length > 1 ? parts.last.trim() : '';
+          final displayCost =
+              (rate.service.toLowerCase().contains('on demand') &&
+                  rate.cost == 4.95)
+              ? 0.0
+              : rate.cost;
+          final costText = displayCost == 0.0
+              ? 'FREE'
+              : '\$${displayCost.toStringAsFixed(2)}';
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: InkWell(
-            onTap: () => onMethodChanged(rate.service.toLowerCase()),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? CheckoutTheme.primaryColor.withOpacity(0.08)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSelected
-                      ? CheckoutTheme.primaryColor
-                      : Colors.grey.shade300,
-                  width: isSelected ? 2 : 1,
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: InkWell(
+              onTap: () => onMethodChanged(rate.service.toLowerCase()),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
                 ),
-              ),
-              child: Row(
-                children: [
-                  Radio<String>(
-                    value: rate.service.toLowerCase(),
-                    groupValue: selectedMethod,
-                    onChanged: (val) => onMethodChanged(val ?? selectedMethod),
-                    activeColor: CheckoutTheme.primaryColor,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? CheckoutTheme.primaryColor.withOpacity(0.08)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected
+                        ? CheckoutTheme.primaryColor
+                        : Colors.grey.shade300,
+                    width: isSelected ? 2 : 1,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                fontFamily: CheckoutTheme.fontFamily,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            if (subtitle.isNotEmpty) ...[
-                              const SizedBox(height: 6),
+                ),
+                child: Row(
+                  children: [
+                    Radio<String>(
+                      value: rate.service.toLowerCase(),
+                      groupValue: selectedMethod,
+                      onChanged: (val) =>
+                          onMethodChanged(val ?? selectedMethod),
+                      activeColor: CheckoutTheme.primaryColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                subtitle,
-                                style: TextStyle(
+                                title,
+                                style: const TextStyle(
                                   fontFamily: CheckoutTheme.fontFamily,
-                                  fontSize: 13,
-                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  color: Colors.black87,
                                 ),
                               ),
+                              if (subtitle.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    fontFamily: CheckoutTheme.fontFamily,
+                                    fontSize: 13,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
                             ],
-                          ],
-                        ),
-                        Text(
-                          costText,
-                          style: TextStyle(
-                            fontFamily: CheckoutTheme.fontFamily,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: displayCost == 0.0
-                                ? Colors.green.shade700
-                                : const Color(0xFF191919),
                           ),
-                        ),
-                      ],
+                          Text(
+                            costText,
+                            style: TextStyle(
+                              fontFamily: CheckoutTheme.fontFamily,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: displayCost == 0.0
+                                  ? Colors.green.shade700
+                                  : const Color(0xFF191919),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+          );
+        }),
+
+        // ✅ Default postcode notice
+        const SizedBox(height: 8),
+        Text(
+          'Showing delivery options for default postcode 2000.',
+          style: TextStyle(
+            fontStyle: FontStyle.italic,
+            fontSize: 13,
+            color: Colors.grey.shade600,
           ),
-        );
-      }).toList(),
+        ),
+      ],
     );
   }
 }
