@@ -12,7 +12,6 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State {
   final OrderService _orderService = OrderService();
-  String? _passwordInput;
   bool _isAuthenticated = false;
   static const String _adminPassword = 'admin123'; // Change this in production
 

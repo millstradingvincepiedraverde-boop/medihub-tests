@@ -328,8 +328,7 @@ class Product {
       case ProductCategory.scooters:
         return Icons.electric_scooter_rounded;
       case ProductCategory.unknown:
-      default:
-        return Icons.inventory_2_outlined;
+      return Icons.inventory_2_outlined;
     }
   }
 }

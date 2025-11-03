@@ -209,20 +209,17 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
         Positioned(
           right: isMobile ? -size.width * 1.7 : -size.width * 0.0,
           bottom: isMobile
-              ? size.height *
-                    0.60 
+              ? size.height * 0.60
               : isTablet
               ? size.height * 0.12
               : size.height * 0.13,
           child: Image.asset(
             slide.imageUrl,
             width: isMobile
-                ? size.width *
-                      .99
+                ? size.width * .99
                 : isTablet
-                ? size.width *
-                      .99 
-                : size.width * .99, 
+                ? size.width * .99
+                : size.width * .99,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) {
               print('⚠️ Image load failed: $error');
@@ -237,7 +234,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
   // --- Footer ---
   Widget _buildFooter(Size size) {
     final isMobile = _isMobile(size);
-    final fontSize = _scaleFont(46, size);
+    _scaleFont(46, size);
 
     return Positioned(
       bottom: 0,

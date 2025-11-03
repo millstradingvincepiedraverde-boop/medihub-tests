@@ -1,6 +1,3 @@
-import 'package:flutter/material.dart';
-import '../models/product.dart';
-
 class AppConstants {
   // // Define new product IDs for suggestions
   // static const String ID_ROLLATOR_WALKER = 'dla004'; // New Alternative

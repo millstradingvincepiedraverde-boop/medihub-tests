@@ -65,6 +65,21 @@ class ProductController extends ChangeNotifier {
     _setLoading(false);
   }
 
+  List<Product> filteredProducts({
+    ProductCategory? category,
+    String searchQuery = '',
+  }) {
+    final all = products; // assuming `products` is your loaded list of Product
+
+    return all.where((product) {
+      final matchesCategory = category == null || product.category == category;
+      final matchesSearch =
+          searchQuery.isEmpty ||
+          product.name.toLowerCase().contains(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    }).toList();
+  }
+
   /// ------------------------------------------------------------
   /// Filter products by category
   /// ------------------------------------------------------------

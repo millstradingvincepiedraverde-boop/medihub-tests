@@ -13,14 +13,14 @@ class _FooterWidgetState extends State<FooterWidget> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isLargeScreen =
-        screenWidth >= 800; // ✅ show volume only on large screens
+    final bool isDesktop =
+        screenWidth >= 1200; // ✅ Show volume only on large desktop screens
 
     return Container(
       width: double.infinity,
       color: const Color(0xFF1A171B),
       padding: EdgeInsets.symmetric(
-        horizontal: isLargeScreen ? 40 : 16,
+        horizontal: isDesktop ? 40 : 16,
         vertical: 12,
       ),
       child: Stack(
@@ -30,7 +30,7 @@ class _FooterWidgetState extends State<FooterWidget> {
           Center(
             child: Wrap(
               alignment: WrapAlignment.center,
-              spacing: isLargeScreen ? 40 : 20,
+              spacing: isDesktop ? 40 : 20,
               runSpacing: 8,
               children: const [
                 Text(
@@ -49,8 +49,8 @@ class _FooterWidgetState extends State<FooterWidget> {
             ),
           ),
 
-          // === Left Volume Control Section (Only Large Screens) ===
-          if (isLargeScreen)
+          // === Left Volume Control (Desktop Only) ===
+          if (isDesktop)
             Align(
               alignment: Alignment.centerLeft,
               child: Row(

@@ -28,12 +28,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   static const double _kTabletBreakpoint = 800.0;
 
-  static const Duration _inactivityTimeout = Duration(
-    seconds: 120,
-  ); // idle timeout
-  static const Duration _dialogAutoClose = Duration(
-    seconds: 30,
-  ); // auto-redirect delay
+  static const Duration _inactivityTimeout = Duration(seconds: 120);
 
   ProductCategory? _selectedCategory;
   dynamic _selectedSubType;
@@ -535,7 +530,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     }
 
     // Detect content layout type
-    final bool isContentNarrow = screenWidth >= _kTabletBreakpoint;
 
     // 🧠 Always start/reset inactivity timer when this widget rebuilds
     // (especially when products or search results change)
@@ -844,8 +838,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     required int count,
     required VoidCallback onTap,
   }) {
-    final Color primaryColor = const Color.fromARGB(255, 71, 3, 88);
-
     return Padding(
       padding: const EdgeInsets.only(left: 20.0, top: 10.0, bottom: 10.0),
       // ⬆️ Removed right padding to let selected box align flush to the right edge
@@ -1081,159 +1073,4 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       ),
     );
   }
-
-  // void _showSubcategoryFilter(BuildContext context) {
-  //   if (_selectedCategory == null) return;
-
-  //   final subTypes = _getSubTypesForCategory(_selectedCategory!);
-
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) {
-  //       return Center(
-  //         child: Material(
-  //           color: Colors.transparent,
-  //           child: Container(
-  //             width: MediaQuery.of(context).size.width * 0.85,
-  //             constraints: const BoxConstraints(maxWidth: 480),
-  //             padding: const EdgeInsets.all(24),
-  //             decoration: BoxDecoration(
-  //               color: Colors.white,
-  //               borderRadius: BorderRadius.circular(20),
-  //               boxShadow: [
-  //                 BoxShadow(
-  //                   color: Colors.black26,
-  //                   blurRadius: 20,
-  //                   offset: const Offset(0, 8),
-  //                 ),
-  //               ],
-  //             ),
-  //             child: Column(
-  //               mainAxisSize: MainAxisSize.min,
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: [
-  //                 // ✳️ Title Row with Close Button
-  //                 Row(
-  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                   children: [
-  //                     Text(
-  //                       'Filter by Type',
-  //                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-  //                         fontWeight: FontWeight.bold,
-  //                       ),
-  //                     ),
-  //                     IconButton(
-  //                       icon: const Icon(Icons.close, color: Colors.black54),
-  //                       onPressed: () => Navigator.pop(context),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 const SizedBox(height: 20),
-
-  //                 // ✳️ Subtype Grid (2 columns)
-  //                 SizedBox(
-  //                   height: 300,
-  //                   child: GridView.count(
-  //                     crossAxisCount: 2,
-  //                     mainAxisSpacing: 12,
-  //                     crossAxisSpacing: 12,
-  //                     childAspectRatio: 3.2, // wider chip layout
-  //                     shrinkWrap: true,
-  //                     physics: const AlwaysScrollableScrollPhysics(),
-  //                     children: [
-  //                       // All Types chip
-  //                       ChoiceChip(
-  //                         label: const Text('All Types'),
-  //                         selected: _selectedSubType == null,
-  //                         onSelected: (selected) {
-  //                           _updateBreadcrumbPath(
-  //                             category: _selectedCategory,
-  //                             subType: null,
-  //                           );
-  //                           Navigator.pop(context);
-  //                         },
-  //                         selectedColor: const Color(0xFF4A306D),
-  //                         labelStyle: TextStyle(
-  //                           fontSize: 16,
-  //                           color: _selectedSubType == null
-  //                               ? Colors.white
-  //                               : Colors.black87,
-  //                           fontWeight: FontWeight.w600,
-  //                         ),
-  //                         padding: const EdgeInsets.symmetric(
-  //                           horizontal: 16,
-  //                           vertical: 10,
-  //                         ),
-  //                         shape: RoundedRectangleBorder(
-  //                           borderRadius: BorderRadius.circular(25),
-  //                           side: BorderSide(
-  //                             color: _selectedSubType == null
-  //                                 ? const Color(0xFF4A306D)
-  //                                 : Colors.grey.shade300,
-  //                             width: 1.2,
-  //                           ),
-  //                         ),
-  //                         avatar: _selectedSubType == null
-  //                             ? const Icon(
-  //                                 Icons.check,
-  //                                 size: 20,
-  //                                 color: Colors.white,
-  //                               )
-  //                             : null,
-  //                       ),
-
-  //                       // Other subtype chips
-  //                       ...subTypes.map((subType) {
-  //                         final selected = _selectedSubType == subType;
-  //                         return ChoiceChip(
-  //                           label: Text(
-  //                             _getSubTypeDisplayName(subType),
-  //                             style: TextStyle(
-  //                               fontSize: 16,
-  //                               color: selected ? Colors.white : Colors.black87,
-  //                               fontWeight: FontWeight.w600,
-  //                             ),
-  //                           ),
-  //                           selected: selected,
-  //                           onSelected: (value) {
-  //                             _updateBreadcrumbPath(
-  //                               category: _selectedCategory,
-  //                               subType: value ? subType : null,
-  //                             );
-  //                             Navigator.pop(context);
-  //                           },
-  //                           selectedColor: const Color(0xFF4A306D),
-  //                           padding: const EdgeInsets.symmetric(
-  //                             horizontal: 16,
-  //                             vertical: 10,
-  //                           ),
-  //                           shape: RoundedRectangleBorder(
-  //                             borderRadius: BorderRadius.circular(25),
-  //                             side: BorderSide(
-  //                               color: selected
-  //                                   ? const Color(0xFF4A306D)
-  //                                   : Colors.grey.shade300,
-  //                               width: 1.2,
-  //                             ),
-  //                           ),
-  //                           avatar: selected
-  //                               ? const Icon(
-  //                                   Icons.check,
-  //                                   size: 20,
-  //                                   color: Colors.white,
-  //                                 )
-  //                               : null,
-  //                         );
-  //                       }),
-  //                     ],
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
 }
