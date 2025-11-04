@@ -143,7 +143,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   final _terminalService = TerminalPaymentService(client: http.Client());
 
   // The terminal ID for the payment terminal
-  final String _terminalId = 'tmr_GPxFXQ7Dxn79hg';
+  final String _terminalId = 'tmr_GQY2gp7gt3N2e4';
 
   int _grandTotalInCents() {
     // Reuse the same logic you use in _buildSummarySection
