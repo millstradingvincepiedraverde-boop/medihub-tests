@@ -615,43 +615,47 @@ class _CartScreenState extends State<CartScreen>
   }
 
   Widget _quantityControl(cartItem) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _qtyButton(Icons.remove, () {
-          if (cartItem.quantity > 1) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _qtyButton(Icons.remove, () {
+            if (cartItem.quantity > 1) {
+              setState(
+                () => _orderService.updateQuantity(
+                  cartItem.product.id,
+                  cartItem.quantity - 1,
+                ),
+              );
+            }
+          }),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Text(
+              '${cartItem.quantity}',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
+          ),
+          _qtyButton(Icons.add, () {
             setState(
               () => _orderService.updateQuantity(
                 cartItem.product.id,
-                cartItem.quantity - 1,
+                cartItem.quantity + 1,
               ),
             );
-          }
-        }),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text(
-            '${cartItem.quantity}',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-          ),
-        ),
-        _qtyButton(Icons.add, () {
-          setState(
-            () => _orderService.updateQuantity(
-              cartItem.product.id,
-              cartItem.quantity + 1,
-            ),
-          );
-        }),
-      ],
+          }),
+        ],
+      ),
     );
   }
 
   Widget _qtyButton(IconData icon, VoidCallback onPressed) {
     return Container(
-      width: 36,
-      height: 36,
-      margin: const EdgeInsets.symmetric(horizontal: 2),
+      width: 30,
+      height: 30,
+      margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
@@ -659,7 +663,7 @@ class _CartScreenState extends State<CartScreen>
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
-        iconSize: 20,
+        iconSize: 16,
         icon: Icon(icon),
         onPressed: onPressed,
       ),
