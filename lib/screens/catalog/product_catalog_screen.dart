@@ -57,7 +57,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     Future.microtask(() {
       if (mounted) {
-        context.read<ProductController>().fetchProducts(forceRefresh: true);
+        // Use cached data - products should already be loaded from splash screen
+        context.read<ProductController>().fetchProducts(forceRefresh: false);
         _startInactivityTimer();
       }
     });
