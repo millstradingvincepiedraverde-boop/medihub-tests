@@ -45,7 +45,7 @@ class WheelchairKioskApp extends StatelessWidget {
         fontFamily: 'GT Walsheim Pro',
         colorSchemeSeed: Colors.blue,
         brightness: Brightness.light,
-        splashColor: Colors.blue.withOpacity(0.4),
+        splashColor: Colors.blue.withOpacity(0.4), 
         highlightColor: Colors.blue.withOpacity(0.1),
         splashFactory: InkRipple.splashFactory,
         listTileTheme: const ListTileThemeData(

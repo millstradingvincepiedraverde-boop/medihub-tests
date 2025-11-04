@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:medihub_tests/services/terminal_payment_service.dart';
+import 'package:medihub_tests/widgets/dialog_terminal_payment.dart';
 import '../../models/customer.dart';
 import '../../services/order_service.dart';
 import 'order_confirmation_screen.dart';
 import '../../controllers/postage_controller.dart';
 import '../../models/postage_rate.dart';
+import 'package:http/http.dart' as http;
 
 class CustomerInfoScreen extends StatefulWidget {
   const CustomerInfoScreen({super.key});
@@ -29,6 +32,8 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
 
+  bool _paymentDialogOpen = false;
+
   String _deliveryMethod = 'standard';
   List<PostageRate> _postageRates = [];
   bool _isLoadingRates = false;
@@ -40,6 +45,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 350),
@@ -133,6 +139,128 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     );
   }
 
+  // Terminal Payment Flow
+  final _terminalService = TerminalPaymentService(client: http.Client());
+
+  // The terminal ID for the payment terminal
+  final String _terminalId = 'tmr_GPxFXQ7Dxn79hg';
+
+  int _grandTotalInCents() {
+    // Reuse the same logic you use in _buildSummarySection
+    // You already have _orderService.cartTotal and the selected shipping.
+    final selectedRate = _postageRates.firstWhere(
+      (r) => r.service.toLowerCase() == _deliveryMethod.toLowerCase(),
+      orElse: () =>
+          PostageRate(service: 'Standard', eta: '', cost: 0, code: '', sku: ''),
+    );
+    final shipping = selectedRate.cost; // double dollars
+    final grandTotal = _orderService.cartTotal + shipping;
+    return (grandTotal * 100).round();
+  }
+
+  Future<void> _payNowOnTerminal() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    // 1) Create PI first so we can cancel it later if needed
+    final String piId;
+    try {
+      piId = await _terminalService.createPaymentIntent(
+        amountCents: _grandTotalInCents(),
+        currency: 'aud', // lowercase for Stripe
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to start payment: $e')));
+      return;
+    }
+
+    // 2) Show updatable dialog WITH a cancel callback
+    setState(() => _paymentDialogOpen = true); 
+    if (!mounted) return;
+    final dialog = showUpdatableTerminalDialog(
+      context,
+      initialMessage: 'Check the terminal to complete payment…',
+      onCancel: () async {
+        await _terminalService.cancelPaymentIntent(
+          paymentIntentId: piId,
+          readerId: _terminalId, // optional but recommended
+        );
+      },
+    );
+
+    dialog.waiting('Starting payment…');
+
+    // 3) Kick off processing on the reader
+    TerminalPaymentResult result;
+    try {
+      result = await _terminalService.processPayment(
+        terminalId: _terminalId,
+        paymentIntentId: piId,
+      );
+    } catch (e) {
+      dialog.error('Payment error');
+      await Future.delayed(const Duration(milliseconds: 900));
+      dialog.close();
+      if (mounted) setState(() => _paymentDialogOpen = false);
+      return;
+    }
+
+    // 4) Decide success vs failure
+    final success =
+        result.ok &&
+        (result.status == null ||
+            result.status == 'succeeded' ||
+            result.status == 'requires_capture');
+
+    if (!success) {
+      dialog.error(
+        'Payment failed${result.status != null ? ' (${result.status})' : ''}',
+      );
+      await Future.delayed(const Duration(milliseconds: 1200));
+      dialog.close();
+      if (mounted) setState(() => _paymentDialogOpen = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.error ?? 'Payment failed')));
+      return;
+    }
+
+    dialog.success('Payment received!');
+    await Future.delayed(const Duration(milliseconds: 900));
+    dialog.close();
+    if (mounted) setState(() => _paymentDialogOpen = false);
+
+    // Place order + navigate
+    final customer = Customer(
+      name:
+          '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      address: _addressController.text.trim(),
+      notes: null,
+    );
+    final order = _orderService.placeOrder(
+      customerName: customer.name,
+      customerEmail: customer.email,
+      customerPhone: customer.phone,
+      deliveryAddress: customer.address,
+    );
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderConfirmationScreen(order: order),
+      ),
+    );
+  }
+
+  /*
+  *********************************************************************************
+  Build the UI
+  *********************************************************************************
+  */
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -147,7 +275,9 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
           FadeTransition(
             opacity: _fadeAnimation,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: _paymentDialogOpen
+                  ? null // 👈 ignore taps while dialog is shown
+                  : () => Navigator.pop(context),
               child: Container(color: Colors.black.withOpacity(0.5)),
             ),
           ),
@@ -367,7 +497,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
             width: double.infinity,
             height: 55,
             child: ElevatedButton(
-              onPressed: _submitOrder,
+              onPressed: _payNowOnTerminal,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4A306D),
                 shape: RoundedRectangleBorder(
@@ -495,10 +625,10 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
               spacing: 16,
               runSpacing: 10,
               children: [
-                SvgPicture.asset('assets/icons/paypal.svg', height: 28),
-                SvgPicture.asset('assets/icons/mastercard.svg', height: 28),
-                SvgPicture.asset('assets/icons/amex.svg', height: 28),
-                SvgPicture.asset('assets/icons/ndis.svg', height: 32),
+                // SvgPicture.asset('assets/icons/paypal.svg', height: 28),
+                // SvgPicture.asset('assets/icons/mastercard.svg', height: 28),
+                // SvgPicture.asset('assets/icons/amex.svg', height: 28),
+                Image.asset('assets/icons/ndis-icon.png', height: 32),
               ],
             ),
           ),

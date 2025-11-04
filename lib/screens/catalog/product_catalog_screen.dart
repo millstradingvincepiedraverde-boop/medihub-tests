@@ -1,9 +1,12 @@
 import 'dart:async';
-
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:medihub_tests/controllers/product_controller.dart';
 import 'package:medihub_tests/screens/kiosk-main.dart';
+import 'package:medihub_tests/services/terminal_payment_service.dart';
+import 'package:medihub_tests/widgets/dialog_terminal_payment.dart';
 import 'package:medihub_tests/widgets/footer_widget.dart';
 import '../../constants/app_constants.dart';
 import '../../models/product.dart';
@@ -949,7 +952,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   Widget _buildSidebar() {
     final Color primaryColor = const Color(0xFF4A306D); // updated color #4A306D
-
     return Container(
       width: 320, // Slightly wider for kiosk layout
       color: Colors.white,

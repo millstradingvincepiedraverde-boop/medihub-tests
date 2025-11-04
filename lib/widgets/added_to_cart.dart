@@ -77,6 +77,30 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
       await Future.delayed(const Duration(milliseconds: 400));
       _checkController.forward();
     });
+
+
+    // PREVENT ASSERTION ERRORS
+    _runSequence();
+  }
+
+  Future<void> _runSequence() async {
+    try {
+      await _imageController.forward();
+      if (!mounted) return;
+
+      await Future.delayed(const Duration(milliseconds: 200));
+      if (!mounted) return;
+
+      await _textController.forward();
+      if (!mounted) return;
+
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+
+      await _checkController.forward();
+    } catch (_) {
+      // swallow if the widget is disposing in the middle
+    }
   }
 
   @override

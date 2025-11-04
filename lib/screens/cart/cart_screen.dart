@@ -495,7 +495,7 @@ class _CartScreenState extends State<CartScreen> {
                 Navigator.of(context).push(
                   PageRouteBuilder(
                     opaque: false,
-                    barrierDismissible: true,
+                    barrierDismissible: false,
                     pageBuilder: (context, _, __) => const CustomerInfoScreen(),
                     transitionsBuilder: (context, animation, _, child) => child,
                   ),
