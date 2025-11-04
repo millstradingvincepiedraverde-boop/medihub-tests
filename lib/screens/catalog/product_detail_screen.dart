@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medihub_tests/widgets/added_to_cart.dart';
 import 'package:medihub_tests/widgets/pdp/video_button.dart';
-
-// kept for optional future use
 import '../../models/product.dart';
 import '../../services/order_service.dart';
 import '../../constants/app_constants.dart';
@@ -26,7 +24,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Replace with multiple images when available
     galleryImages = [
       widget.product.imageUrl,
       widget.product.imageUrl,
@@ -49,19 +46,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 1000;
+            final isWide = constraints.maxWidth > 900;
             final isTablet =
-                constraints.maxWidth > 600 && constraints.maxWidth <= 1000;
+                constraints.maxWidth > 600 && constraints.maxWidth <= 900;
 
+            // 💡 Larger image, smaller text
             double imageSize = isWide
-                ? constraints.maxWidth * 0.4
+                ? constraints.maxWidth * 0.55
                 : isTablet
-                ? constraints.maxWidth * 0.7
-                : constraints.maxWidth * 0.9;
+                ? constraints.maxWidth * 0.85
+                : constraints.maxWidth * 0.95;
 
             double horizontalPadding = isWide ? 120 : (isTablet ? 40 : 16);
-            double fontTitle = isWide ? 32 : (isTablet ? 22 : 16);
-            double priceFont = isWide ? 48 : (isTablet ? 36 : 24);
+            double fontTitle = isWide ? 22 : (isTablet ? 18 : 14);
+            double priceFont = isWide ? 30 : (isTablet ? 24 : 18);
 
             return Stack(
               children: [
@@ -69,7 +67,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // === VIDEO BUTTON WITH TOP + LEFT PADDING ===
+                      // === VIDEO BUTTON (Top Left)
                       Padding(
                         padding: const EdgeInsets.only(
                           top: 24.0,
@@ -78,23 +76,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: VideoButton(
-                            onPressed: () {
-                              // Your video button logic here
-                            },
-                          ),
+                          child: VideoButton(onPressed: () {}),
                         ),
                       ),
 
                       // === MAIN IMAGE CAROUSEL ===
                       SizedBox(
-                        height:
-                            imageSize *
-                            0.75, // 🔹 Slightly smaller (85% of previous size)
+                        height: imageSize * 0.8, // slightly taller
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            // Image carousel
                             PageView.builder(
                               onPageChanged: (index) {
                                 setState(() => _currentImage = index);
@@ -122,10 +113,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 );
                               },
                             ),
-
-                            // Left arrow
+                            // Left / Right Arrows (moved slightly inward)
                             Positioned(
-                              left: 0,
+                              left: 30,
                               child: IconButton(
                                 icon: const Icon(
                                   Icons.arrow_back_ios,
@@ -139,10 +129,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 },
                               ),
                             ),
-
-                            // Right arrow
                             Positioned(
-                              right: 0,
+                              right: 30,
                               child: IconButton(
                                 icon: const Icon(
                                   Icons.arrow_forward_ios,
@@ -161,45 +149,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                       ),
 
-                      // Dots indicator
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.center,
-                      //   children: List.generate(
-                      //     galleryImages.length,
-                      //     (index) => Container(
-                      //       width: 10,
-                      //       height: 10,
-                      //       margin: const EdgeInsets.symmetric(horizontal: 4),
-                      //       decoration: BoxDecoration(
-                      //         shape: BoxShape.circle,
-                      //         color: _currentImage == index
-                      //             ? const Color(0xFF4A306D)
-                      //             : Colors.grey[300],
-                      //       ),
-                      //     ),
-                      //   ),
-                      // ),
+                      const SizedBox(height: 16),
 
-                      // === NAME + PRICE ===
-                      Text(
-                        p.name,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: fontTitle,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF191919),
+                      // === PRODUCT NAME + PRICE (smaller) ===
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 500),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            Text(
+                              p.name,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: fontTitle,
+                                fontWeight: FontWeight.normal,
+                                color: const Color(0xFF191919),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '${AppConstants.currencySymbol}${p.price.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: priceFont,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${AppConstants.currencySymbol}${p.price.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: priceFont,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
+
+                      const SizedBox(height: 28),
 
                       // === QUANTITY + ADD TO CART ===
                       Wrap(
@@ -209,26 +189,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         runSpacing: 16,
                         children: [
                           _quantityControl(),
-                          _addToCartButton(p, isWide ? 28 : 20),
+                          _addToCartButton(p, isWide ? 24 : 18),
                         ],
                       ),
                       const SizedBox(height: 48),
 
-                      // === BLACK DETAILS SECTION ===
+                      // === DETAILS SECTION (DESCRIPTION + SPECS) ===
                       Container(
                         width: double.infinity,
                         color: const Color(0xFF191919),
                         padding: EdgeInsets.symmetric(
-                          horizontal: isWide ? 100 : 24,
+                          horizontal: horizontalPadding,
                           vertical: isWide ? 60 : 40,
                         ),
                         child: isWide
                             ? Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Expanded(child: _buildLeftColumn(p)),
-                                  const SizedBox(width: 40),
-                                  Expanded(child: _buildRightColumn()),
+                                  Flexible(
+                                    flex: 1,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 40),
+                                      child: _buildLeftColumn(p),
+                                    ),
+                                  ),
+                                  Flexible(flex: 1, child: _buildRightColumn()),
                                 ],
                               )
                             : Column(
@@ -244,7 +231,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                 ),
 
-                // Close button
+                // Close Button
                 Positioned(
                   top: 12,
                   right: 12,
@@ -338,7 +325,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF4A306D),
         padding: EdgeInsets.symmetric(
-          horizontal: buttonPadding * 6,
+          horizontal: buttonPadding * 4,
           vertical: buttonPadding,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -346,7 +333,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: const Text(
         'Add to Cart',
         style: TextStyle(
-          fontSize: 18,
+          fontSize: 22,
           fontWeight: FontWeight.bold,
           letterSpacing: 1,
           color: Colors.white,
@@ -355,7 +342,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // === LEFT & RIGHT COLUMN REUSE ===
+  // === LEFT & RIGHT COLUMNS ===
   Widget _buildLeftColumn(Product p) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,14 +376,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         const SizedBox(height: 12),
         _infoBox([
           "12-month Australian warranty",
-          "26cc two-stroke petrol engine",
           "270km/h blow speed",
-          "Double-ringed piston",
-          "Dual-weighted crankshaft",
-          "Lightweight one-hand operation",
-          "Two direction tubes",
+          "Lightweight operation",
           "CE, GS, EMC certification",
-          "BONUS tool kit and fuel mixer",
         ]),
       ],
     );
@@ -419,12 +401,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           "Top Speed": "8km/h",
           "Range": "30km",
           "Weight Capacity": "136kg",
-          "Turning Radius": "1.2m",
-          "Ground Clearance": "7.6cm",
-          "Dimensions (LxWxH)": "102cm x 54cm x 91cm",
-          "Weight": "38kg",
-          "Battery": "12V x 2 (24V system)",
-          "Charger": "Off-board, 2A",
+          "Dimensions": "102cm x 54cm x 91cm",
         }),
         const SizedBox(height: 24),
         const Text(
@@ -437,23 +414,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         const SizedBox(height: 12),
         _infoBox(["1x User Manual", "1x Charger", "1x Tool Kit"]),
-        const SizedBox(height: 24),
-        const Text(
-          "Size & Weight",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _infoBoxText({
-          "Gross Weight": "65kg",
-          "Net Weight": "38kg",
-          "Width": "54cm",
-          "Length": "102cm",
-          "Height": "91cm",
-        }),
       ],
     );
   }
@@ -515,7 +475,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         text: '${e.key}: ',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.normal,
                           fontSize: 16,
                         ),
                       ),
