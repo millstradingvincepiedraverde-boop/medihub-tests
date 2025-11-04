@@ -62,12 +62,15 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
 
   Future<void> _startSequence() async {
     // Image first
+    if (!mounted) return;
     await _imageController.forward();
     await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
 
     // Then text
     await _textController.forward();
     await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
 
     // Then show Lottie animation
     if (mounted) {
@@ -198,9 +201,11 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                         key: const ValueKey('successLottie'),
                         controller: _lottieController,
                         onLoaded: (composition) {
-                          _lottieController
-                            ..duration = composition.duration
-                            ..forward();
+                          if (mounted) {
+                            _lottieController
+                              ..duration = composition.duration
+                              ..forward();
+                          }
                         },
                         width: 180,
                         height: 180,
