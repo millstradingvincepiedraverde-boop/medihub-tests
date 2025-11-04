@@ -4,17 +4,14 @@ import 'package:flutter/material.dart';
 /// ENUMS (Aligned with Sanity Categories)
 /// ------------------------------------------------------------
 enum ProductCategory {
+  mobilityScooters,
   rollators,
-  kneeScooters,
-  recliners,
-  bathroom,
-  bedroom,
-  patientLifts,
   ramps,
-  manualWheelchairs,
-  electricWheelchairs,
-  wheelchairs,
-  scooters,
+  bathroom,
+  recliners,
+  patientLifts,
+  kneeScooters,
+  bedroom,
   unknown,
 }
 
@@ -26,60 +23,52 @@ class ProductCategoryHelper {
     final v = (value ?? '').trim().toLowerCase().replaceAll(' ', '');
 
     switch (v) {
+      case 'mobilityscooters':
+      case 'scooters':
+        return ProductCategory.mobilityScooters;
       case 'rollators':
         return ProductCategory.rollators;
-      case 'kneescooters':
-        return ProductCategory.kneeScooters;
-      case 'recliners':
-        return ProductCategory.recliners;
-      case 'bathroom':
-        return ProductCategory.bathroom;
-      case 'bedroom':
-        return ProductCategory.bedroom;
-      case 'patientlifts':
-        return ProductCategory.patientLifts;
+
       case 'ramps':
         return ProductCategory.ramps;
-      case 'manualwheelchairs':
-        return ProductCategory.manualWheelchairs;
-      case 'electricwheelchairs':
-        return ProductCategory.electricWheelchairs;
-      case 'wheelchairs':
-        return ProductCategory.wheelchairs;
-      case 'scooters':
-        return ProductCategory.scooters;
+      case 'bathroom':
+        return ProductCategory.bathroom;
+      case 'recliners':
+        return ProductCategory.recliners;
+      case 'patientlifts':
+        return ProductCategory.patientLifts;
+      case 'kneescooters':
+        return ProductCategory.kneeScooters;
 
-      // Handle unexpected values like "New Top Level"
+      case 'bedroom':
+        return ProductCategory.bedroom;
+
       default:
-        debugPrint('⚠️ Unknown category: "$value" → defaulting to Wheelchairs');
-        return ProductCategory.wheelchairs;
+        debugPrint('⚠️ Unknown category: "$value" → defaulting to Unknown');
+        return ProductCategory.unknown;
     }
   }
 
   static String toStringValue(ProductCategory category) {
     switch (category) {
+      case ProductCategory.mobilityScooters:
+        return 'Mobility Scooters';
       case ProductCategory.rollators:
         return 'Rollators';
-      case ProductCategory.kneeScooters:
-        return 'Knee Scooters';
-      case ProductCategory.recliners:
-        return 'Recliners';
-      case ProductCategory.bathroom:
-        return 'Bathroom';
-      case ProductCategory.bedroom:
-        return 'Bedroom';
-      case ProductCategory.patientLifts:
-        return 'Patient Lifts';
+
       case ProductCategory.ramps:
         return 'Ramps';
-      case ProductCategory.manualWheelchairs:
-        return 'Manual Wheelchairs';
-      case ProductCategory.electricWheelchairs:
-        return 'Electric Wheelchairs';
-      case ProductCategory.wheelchairs:
-        return 'Wheelchairs';
-      case ProductCategory.scooters:
-        return 'Scooters';
+      case ProductCategory.bathroom:
+        return 'Bathroom';
+      case ProductCategory.recliners:
+        return 'Recliners';
+      case ProductCategory.patientLifts:
+        return 'Patient Lifts';
+      case ProductCategory.kneeScooters:
+        return 'Knee Scooters';
+
+      case ProductCategory.bedroom:
+        return 'Bedroom';
       case ProductCategory.unknown:
         return 'Unknown';
     }
@@ -124,9 +113,6 @@ class Product {
     this.hasSameDayDelivery = false,
   });
 
-  /// ------------------------------------------------------------
-  /// EMPTY FACTORY
-  /// ------------------------------------------------------------
   factory Product.empty() => Product(
     id: '',
     sku: '',
@@ -137,14 +123,9 @@ class Product {
     imageUrl: '',
   );
 
-  /// Extracts readable text from Sanity's Portable Text or raw JSON description.
   static String _extractDescription(dynamic value) {
     if (value == null) return '';
-
-    // If it's already a simple string
     if (value is String) return value;
-
-    // If it's a Sanity block array
     if (value is List) {
       final buffer = StringBuffer();
       for (var block in value) {
@@ -158,8 +139,6 @@ class Product {
       }
       return buffer.toString().trim();
     }
-
-    // If it's a single block map
     if (value is Map && value['children'] is List) {
       return value['children']
           .map((child) => child['text'] ?? '')
@@ -167,17 +146,9 @@ class Product {
           .toString()
           .trim();
     }
-
-    // Default fallback
     return value.toString();
   }
 
-  /// ------------------------------------------------------------
-  /// FROM SANITY (SAFE PARSING)
-  /// --------------------------
-  ///
-  ///
-  /// ----------------------------------
   factory Product.fromSanity(Map<String, dynamic> json) {
     String safeString(dynamic value) {
       if (value == null) return '';
@@ -219,7 +190,7 @@ class Product {
       imageUrl = json['imageUrl'];
     }
 
-    // ✅ Category handling (handles reference)
+    // ✅ Category handling
     String rawCategory = '';
     final categoryData = json['category'] ?? json['topLevelCategory'];
     if (categoryData is Map && categoryData['title'] != null) {
@@ -256,9 +227,6 @@ class Product {
     );
   }
 
-  /// ------------------------------------------------------------
-  /// TO JSON
-  /// ------------------------------------------------------------
   Map<String, dynamic> toJson() {
     return {
       '_id': id,
@@ -278,9 +246,6 @@ class Product {
     };
   }
 
-  /// ------------------------------------------------------------
-  /// DISPLAY HELPERS
-  /// ------------------------------------------------------------
   String get categoryDisplayName =>
       ProductCategoryHelper.toStringValue(category);
 
@@ -305,30 +270,26 @@ class Product {
 
   IconData get categoryIcon {
     switch (category) {
+      case ProductCategory.mobilityScooters:
+        return Icons.electric_scooter_rounded;
       case ProductCategory.rollators:
         return Icons.wheelchair_pickup_rounded;
-      case ProductCategory.kneeScooters:
-        return Icons.two_wheeler_rounded;
-      case ProductCategory.recliners:
-        return Icons.chair_alt_rounded;
-      case ProductCategory.bathroom:
-        return Icons.bathtub_rounded;
-      case ProductCategory.bedroom:
-        return Icons.bed_rounded;
-      case ProductCategory.patientLifts:
-        return Icons.accessibility_new_rounded;
+
       case ProductCategory.ramps:
         return Icons.stairs_rounded;
-      case ProductCategory.manualWheelchairs:
-        return Icons.accessible_forward_rounded;
-      case ProductCategory.electricWheelchairs:
-        return Icons.electric_bike_rounded;
-      case ProductCategory.wheelchairs:
-        return Icons.wheelchair_pickup_rounded;
-      case ProductCategory.scooters:
-        return Icons.electric_scooter_rounded;
+      case ProductCategory.bathroom:
+        return Icons.bathtub_rounded;
+      case ProductCategory.recliners:
+        return Icons.chair_alt_rounded;
+      case ProductCategory.patientLifts:
+        return Icons.accessibility_new_rounded;
+      case ProductCategory.kneeScooters:
+        return Icons.two_wheeler_rounded;
+
+      case ProductCategory.bedroom:
+        return Icons.bed_rounded;
       case ProductCategory.unknown:
-      return Icons.inventory_2_outlined;
+        return Icons.inventory_2_outlined;
     }
   }
 }
