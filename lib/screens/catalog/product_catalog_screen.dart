@@ -7,6 +7,9 @@ import 'package:medihub_tests/utils/catalog/inactivity_dialog.dart';
 import 'package:medihub_tests/utils/catalog/mobile_category_chips.dart';
 import 'package:medihub_tests/utils/catalog/product_grid_view.dart';
 import 'package:medihub_tests/utils/catalog/search_filter_bar.dart';
+import 'package:medihub_tests/widgets/homepage/most_popular_section.dart';
+import 'package:medihub_tests/widgets/homepage/qr_code_banner.dart';
+import 'package:medihub_tests/widgets/homepage/top_categories_section.dart';
 import 'package:provider/provider.dart';
 import 'package:medihub_tests/controllers/product_controller.dart';
 import 'package:medihub_tests/screens/kiosk-main.dart';
@@ -37,14 +40,26 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   List<String> _breadcrumbPath = ['Home'];
   Timer? _inactivityTimer;
 
+  void logDebug(String message) {
+    debugPrint('🐞 [CATALOG] $message', wrapWidth: 1024);
+  }
+
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _selectedCategory = null;
+    _selectedSubType = null;
+    _searchQuery = '';
+    logDebug(
+      '🟢 initState → category: $_selectedCategory (home view expected)',
+    );
 
     Future.microtask(() {
-      context.read<ProductController>().fetchProducts(forceRefresh: true);
-      _startInactivityTimer();
+      if (mounted) {
+        context.read<ProductController>().fetchProducts(forceRefresh: true);
+        _startInactivityTimer();
+      }
     });
   }
 
@@ -61,26 +76,25 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   void _startInactivityTimer() {
     _cancelInactivityTimer();
-    print('⏱️ Timer started (${_inactivityTimeout.inSeconds}s)');
+    logDebug('⏱️ Timer started (${_inactivityTimeout.inSeconds}s)');
     _inactivityTimer = Timer(_inactivityTimeout, _showInactivityDialog);
   }
 
-  void _cancelInactivityTimer() {
-    _inactivityTimer?.cancel();
-  }
+  void _cancelInactivityTimer() => _inactivityTimer?.cancel();
 
   void _resetInactivityTimer() {
+    logDebug('🔄 Reset inactivity timer');
     _startInactivityTimer();
   }
 
   void _onUserInteraction() {
-    print('👆 Interaction detected');
+    logDebug('👆 User interaction detected');
     _resetInactivityTimer();
   }
 
   void _showInactivityDialog() {
     if (!mounted) return;
-    print('⚠️ Timeout reached, showing dialog');
+    logDebug('⚠️ Timeout reached → showing inactivity dialog');
 
     showDialog(
       context: context,
@@ -97,6 +111,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   void _navigateToKiosk() {
     if (!mounted) return;
+    logDebug('🏠 Navigating back to kiosk main');
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const KioskMain()),
@@ -109,8 +124,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   // ============================================================================
 
   List<Product> get _filteredProducts {
+    logDebug('🔍 Filtering → category: $_selectedCategory');
     final productController = context.watch<ProductController>();
-
     var products = _selectedCategory == null
         ? productController.products
         : productController.getProductsByCategory(_selectedCategory!);
@@ -120,25 +135,25 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     }
 
     if (_searchQuery.isNotEmpty) {
-      final lowerCaseQuery = _searchQuery.toLowerCase();
-      products = products.where((product) {
-        return product.name.toLowerCase().contains(lowerCaseQuery) ||
-            product.description.toLowerCase().contains(lowerCaseQuery) ||
-            product.colorName.toLowerCase().contains(lowerCaseQuery);
+      final query = _searchQuery.toLowerCase();
+      products = products.where((p) {
+        return p.name.toLowerCase().contains(query) ||
+            p.description.toLowerCase().contains(query) ||
+            p.colorName.toLowerCase().contains(query);
       }).toList();
     }
 
+    logDebug('📦 Filtered products count: ${products.length}');
     return products;
   }
 
   // ============================================================================
-  // HELPER METHODS
+  // HELPERS
   // ============================================================================
 
   String _getSubTypeDisplayName(dynamic subType) {
     if (subType == null) return 'All';
-
-    final tempProduct = Product(
+    final temp = Product(
       id: '',
       sku: '',
       name: '',
@@ -152,15 +167,15 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       color: Colors.grey,
       colorName: '',
     );
-    return tempProduct.subTypeDisplayName;
+    return temp.subTypeDisplayName;
   }
 
   ProductCategory? _getCategoryFromDisplayName(String displayName) {
     for (var category in ProductCategory.values) {
-      final tempProduct = Product(
+      final temp = Product(
         id: '',
-        name: '',
         sku: '',
+        name: '',
         description: '',
         category: category,
         subType: '',
@@ -171,25 +186,27 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         color: Colors.grey,
         colorName: '',
       );
-      if (tempProduct.categoryDisplayName == displayName) {
-        return category;
-      }
+      if (temp.categoryDisplayName == displayName) return category;
     }
     return null;
   }
 
   // ============================================================================
-  // NAVIGATION LOGIC
+  // NAVIGATION
   // ============================================================================
 
   void _updateBreadcrumbPath({ProductCategory? category, dynamic subType}) {
+    logDebug(
+      '🧭 Updating breadcrumb → category: $category | subType: $subType',
+    );
+
     setState(() {
       _selectedCategory = category;
       _selectedSubType = subType;
 
       _breadcrumbPath = ['Home'];
       if (category != null) {
-        final tempProduct = Product(
+        final temp = Product(
           id: '',
           sku: '',
           name: '',
@@ -203,7 +220,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
           color: Colors.grey,
           colorName: '',
         );
-        _breadcrumbPath.add(tempProduct.categoryDisplayName);
+        _breadcrumbPath.add(temp.categoryDisplayName);
 
         if (subType != null) {
           _breadcrumbPath.add(_getSubTypeDisplayName(subType));
@@ -213,41 +230,38 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       _searchQuery = '';
       _searchController.clear();
     });
+
+    logDebug('✅ Updated → _selectedCategory: $_selectedCategory');
   }
 
   void _handleBreadcrumbTap(int index) {
-    setState(() {
-      if (index == 0) {
-        _updateBreadcrumbPath(category: null, subType: null);
-      } else if (index == 1) {
-        final categoryName = _breadcrumbPath[1];
-        final category = _getCategoryFromDisplayName(categoryName);
-
-        if (category != null) {
-          _updateBreadcrumbPath(category: category, subType: null);
-        } else {
-          _updateBreadcrumbPath(category: null, subType: null);
-        }
-      }
-    });
+    logDebug('🧩 Breadcrumb tapped → index: $index');
+    if (index == 0) {
+      _updateBreadcrumbPath(category: null, subType: null);
+    } else if (index == 1) {
+      final catName = _breadcrumbPath[1];
+      final cat = _getCategoryFromDisplayName(catName);
+      _updateBreadcrumbPath(category: cat, subType: null);
+    }
   }
 
   // ============================================================================
-  // PRODUCT TAP HANDLER
+  // PRODUCT TAP
   // ============================================================================
 
   void _handleProductTap(Product product) {
     _cancelInactivityTimer();
+    logDebug('🛒 Product tapped: ${product.name}');
 
     Navigator.push(
       context,
       PageRouteBuilder(
         opaque: false,
         transitionDuration: const Duration(milliseconds: 450),
-        pageBuilder: (context, animation, secondaryAnimation) {
+        pageBuilder: (context, animation, _) {
           const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
-          final slideTween = Tween(
+          final tween = Tween(
             begin: begin,
             end: end,
           ).chain(CurveTween(curve: Curves.easeOutCubic));
@@ -256,20 +270,16 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             opacity: animation,
             child: Stack(
               children: [
-                // Tap outside to dismiss
                 Positioned.fill(
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    behavior: HitTestBehavior.opaque,
                     child: Container(color: Colors.black.withOpacity(0.4)),
                   ),
                 ),
-
-                // Bottom Sheet
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: SlideTransition(
-                    position: animation.drive(slideTween),
+                    position: animation.drive(tween),
                     child: FractionallySizedBox(
                       widthFactor: 1.0,
                       heightFactor: 0.85,
@@ -286,54 +296,66 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             ),
           );
         },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-            child,
+        transitionsBuilder: (context, animation, _, child) => child,
       ),
-    ).then((_) {
-      _resetInactivityTimer();
-    });
+    ).then((_) => _resetInactivityTimer());
   }
 
   // ============================================================================
-  // MAIN PRODUCT AREA
+  // VIEWS
   // ============================================================================
 
   Widget _buildMainProductArea(double screenWidth) {
-    int crossAxisCount;
-    if (screenWidth >= 1200) {
-      crossAxisCount = 3; // Desktop
-    } else if (screenWidth >= _kTabletBreakpoint) {
-      crossAxisCount = 2; // Tablet
-    } else {
-      crossAxisCount = 2; // Mobile
-    }
+    final isHomeView = _selectedCategory == null && _searchQuery.isEmpty;
+    return isHomeView ? _buildHomescreenView() : _buildCatalogView(screenWidth);
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startInactivityTimer();
-    });
+  Widget _buildHomescreenView() {
+    final controller = context.watch<ProductController>();
+    return SingleChildScrollView(
+      key: const ValueKey('homescreen'),
+      child: Container(
+        color: Colors.grey.shade400,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MostPopularSection(
+              products: controller.products,
+              onProductTap: _handleProductTap,
+            ),
+            TopCategoriesSection(
+              onCategoryTap: (category) {
+                logDebug('🖱️ Top category tapped: $category');
+                _updateBreadcrumbPath(category: category, subType: null);
+              },
+            ),
+            const QRCodeBanner(),
+          ],
+        ),
+      ),
+    );
+  }
 
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _onUserInteraction(),
-      onPointerMove: (_) => _onUserInteraction(),
-      onPointerHover: (_) => _onUserInteraction(),
+  Widget _buildCatalogView(double screenWidth) {
+    int crossAxisCount = screenWidth >= 1200
+        ? 3
+        : screenWidth >= _kTabletBreakpoint
+        ? 2
+        : 2;
+
+    return Container(
+      color: Colors.grey.shade100,
       child: Column(
+        key: const ValueKey('catalogview'),
         children: [
-          // Breadcrumb
           BreadcrumbWidget(
             breadcrumbPath: _breadcrumbPath,
             onBreadcrumbTap: _handleBreadcrumbTap,
           ),
-
-          // Search & Filter Bar
           SearchFilterBar(
             searchController: _searchController,
             searchQuery: _searchQuery,
-            onSearchChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
+            onSearchChanged: (v) => setState(() => _searchQuery = v),
             onClearSearch: () {
               setState(() {
                 _searchQuery = '';
@@ -344,31 +366,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             selectedSubTypeDisplay: _selectedSubType == null
                 ? null
                 : _getSubTypeDisplayName(_selectedSubType),
-            onFilterPressed: () {
-              // TODO: Implement subcategory filter
-            },
+            onFilterPressed: () {},
           ),
-
-          // Hero Banner (only on home view)
-          if (_selectedCategory == null && _searchQuery.isEmpty)
-            HeroBanner(screenWidth: screenWidth),
-
-          // Header placeholder for sorting controls
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200, width: 1),
-              ),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [],
-            ),
-          ),
-
-          // Product Grid / Empty State
           Expanded(
             child: ProductGridView(
               products: _filteredProducts,
@@ -382,49 +381,58 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   }
 
   // ============================================================================
-  // BUILD METHOD
+  // BUILD
   // ============================================================================
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isLargeScreen = screenWidth >= _kTabletBreakpoint;
+    final width = MediaQuery.of(context).size.width;
+    final isLargeScreen = width >= _kTabletBreakpoint;
 
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => _onUserInteraction(),
       onPointerMove: (_) => _onUserInteraction(),
-      onPointerHover: (_) => _onUserInteraction(),
       child: Scaffold(
+        backgroundColor: Colors.grey.shade400, // 🟢 Global background
         body: isLargeScreen
             ? Row(
-                // Desktop / Tablet Layout
                 children: [
                   CategorySidebar(
                     selectedCategory: _selectedCategory,
                     selectedSubType: _selectedSubType,
-                    onCategorySelected: (category) {
-                      _updateBreadcrumbPath(category: category, subType: null);
-                    },
+                    onCategorySelected: (category) => _updateBreadcrumbPath(
+                      category: category,
+                      subType: null,
+                    ),
                   ),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: _buildMainProductArea(screenWidth)),
+                  if (_selectedCategory == null)
+                    const VerticalDivider(width: 1, color: Color(0xFFE0E0E0)),
+                  Expanded(
+                    child: Container(
+                      color: Colors.grey.shade400,
+                      child: _buildMainProductArea(width),
+                    ),
+                  ),
                 ],
               )
             : Column(
-                // Mobile Layout
                 children: [
                   MobileCategoryChips(
                     selectedCategory: _selectedCategory,
-                    onCategorySelected: (category) {
-                      _updateBreadcrumbPath(category: category, subType: null);
-                    },
+                    onCategorySelected: (category) => _updateBreadcrumbPath(
+                      category: category,
+                      subType: null,
+                    ),
                   ),
-                  Expanded(child: _buildMainProductArea(screenWidth)),
+                  Expanded(
+                    child: Container(
+                      color: Colors.grey.shade400,
+                      child: _buildMainProductArea(width),
+                    ),
+                  ),
                 ],
               ),
-
-        // Bottom area with cart button and footer
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

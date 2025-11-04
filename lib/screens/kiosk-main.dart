@@ -102,7 +102,6 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
     );
   }
 
-  // --- Responsive helpers ---
   bool _isMobile(Size size) => size.width < 600;
   bool _isTablet(Size size) => size.width >= 600 && size.width < 1024;
 
@@ -125,16 +124,11 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
     return Stack(
       alignment: Alignment.center,
       children: [
-        Positioned.fill(
-          child: Container(color: Colors.white), // ✅ WHITE BACKGROUND
-        ),
+        Positioned.fill(child: Container(color: Colors.white)),
 
         // --- Text content ---
         Positioned(
-          top: isMobile
-              ? size.height *
-                    0.03 // 👈 close to top on mobile
-              : size.height * 0.08, // 👈 slightly lower on larger screens
+          top: isMobile ? size.height * 0.03 : size.height * 0.08,
           left: isMobile ? 20 : size.width * 0.1,
           right: isMobile ? 10 : size.width * 0.1,
           child: ConstrainedBox(
@@ -154,33 +148,27 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
                       const CircularProgressIndicator(),
                 ),
                 const SizedBox(height: 24),
-
-                // --- Title ---
                 Text(
                   slide.title,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: _scaleFont(120, size), // ⬆️ Larger title
+                    fontSize: _scaleFont(120, size),
                     color: const Color(0xFF191919),
-                    fontWeight: FontWeight.w800, // ⬆️ Bolder
+                    fontWeight: FontWeight.w800,
                     letterSpacing: -0.5,
                     height: 1.0,
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // --- Subtitle ---
                 Text(
                   slide.subtitle,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: _scaleFont(32, size), // ⬆️ Slightly larger
+                    fontSize: _scaleFont(32, size),
                     color: const Color(0xFF191919),
-                    fontWeight: FontWeight.w300, // Medium weight for clarity
+                    fontWeight: FontWeight.w300,
                     height: 1.2,
                   ),
                 ),
                 const SizedBox(height: 36),
-
-                // --- Promo text ---
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -190,10 +178,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
                   child: Text(
                     slide.promoText,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: _scaleFont(
-                        32,
-                        size,
-                      ), // ⬆️ Slightly larger promo
+                      fontSize: _scaleFont(32, size),
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
@@ -205,7 +190,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
           ),
         ),
 
-        // --- Product Image (large) ---
+        // --- Product Image (animated transition) ---
         Positioned(
           right: isMobile ? -size.width * 1.7 : -size.width * 0.0,
           bottom: isMobile
@@ -213,18 +198,51 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
               : isTablet
               ? size.height * 0.12
               : size.height * 0.13,
-          child: Image.asset(
-            slide.imageUrl,
-            width: isMobile
-                ? size.width * .99
-                : isTablet
-                ? size.width * .99
-                : size.width * .99,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              print('⚠️ Image load failed: $error');
-              return const Icon(Icons.error, color: Colors.red);
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 800),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final inFromLeft =
+                  Tween<Offset>(
+                    begin: const Offset(-1.0, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  );
+              final outToRight =
+                  Tween<Offset>(
+                    begin: Offset.zero,
+                    end: const Offset(1.0, 0),
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeInCubic,
+                    ),
+                  );
+
+              return SlideTransition(
+                position: animation.status == AnimationStatus.reverse
+                    ? outToRight
+                    : inFromLeft,
+                child: FadeTransition(opacity: animation, child: child),
+              );
             },
+            child: Image.asset(
+              slide.imageUrl,
+              key: ValueKey(slide.imageUrl),
+              width: isMobile
+                  ? size.width * .99
+                  : isTablet
+                  ? size.width * .99
+                  : size.width * .99,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                print('⚠️ Image load failed: $error');
+                return const Icon(Icons.error, color: Colors.red);
+              },
+            ),
           ),
         ),
       ],
@@ -234,7 +252,6 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
   // --- Footer ---
   Widget _buildFooter(Size size) {
     final isMobile = _isMobile(size);
-    _scaleFont(46, size);
 
     return Positioned(
       bottom: 0,
@@ -246,7 +263,6 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // ✅ Corrected icon path
               SvgPicture.asset(
                 'assets/icons/touch-icon.svg',
                 height: isMobile ? 40 : 120,
@@ -305,7 +321,7 @@ class _KioskMainState extends State<KioskMain> with TickerProviderStateMixin {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white, // ✅ WHITE PAGE BACKGROUND
+      backgroundColor: Colors.white,
       body: GestureDetector(
         onTap: _toggleKiosk,
         child: Stack(

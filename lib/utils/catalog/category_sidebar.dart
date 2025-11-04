@@ -24,21 +24,28 @@ class CategorySidebar extends StatelessWidget {
     return Container(
       width: 320,
       color: Colors.white,
+      clipBehavior: Clip.none,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo Header
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: const BoxDecoration(color: Colors.white),
-            child: SvgPicture.asset(
-              'assets/images/medihub-logo.svg',
-              height: 40,
-              fit: BoxFit.contain,
+          // === LOGO HEADER ===
+          GestureDetector(
+            onTap: () {
+              debugPrint('🏠 MediHub logo tapped → returning to home screen');
+              onCategorySelected(null); // Reset category selection
+            },
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: const BoxDecoration(color: Colors.white),
+              child: SvgPicture.asset(
+                'assets/images/medihub-logo.svg',
+                height: 40,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
 
-          // Category List
+          // === CATEGORY LIST ===
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -84,14 +91,19 @@ class CategorySidebar extends StatelessWidget {
                     isSelected:
                         selectedCategory == category && selectedSubType == null,
                     count: count,
-                    onTap: () => onCategorySelected(category),
+                    onTap: () {
+                      debugPrint(
+                        '🖱️ Category tapped: ${tempProduct.categoryDisplayName}',
+                      );
+                      onCategorySelected(category);
+                    },
                   );
                 }).toList(),
               ],
             ),
           ),
 
-          // Support Section
+          // === SUPPORT SECTION ===
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             decoration: BoxDecoration(
@@ -168,32 +180,49 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 20.0, top: 10.0, bottom: 10.0),
+      // 👇 remove right padding if selected to let it “connect”
+      padding: EdgeInsets.only(
+        left: 20,
+        top: 10,
+        bottom: 10,
+        right: isSelected ? 0 : 20,
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Stack(
+          clipBehavior: Clip.none, // 👈 allow overflow beyond container
           children: [
-            // Highlight background
-            Positioned.fill(
-              right: 0,
+            // === Background highlight ===
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: 0,
+              // 👇 extend the right edge slightly beyond sidebar
+              right: isSelected ? -10 : 0,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+                duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFFF3F1F6)
+                      ? Colors.grey.shade100
                       : Colors.transparent,
+                  borderRadius: BorderRadius.horizontal(
+                    left: const Radius.circular(16),
+                    right: isSelected
+                        ? const Radius.circular(0) // flatten edge
+                        : const Radius.circular(16),
+                  ),
                 ),
               ),
             ),
 
-            // Content
+            // === Content ===
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               child: Row(
                 children: [
-                  // Circular image thumbnail
+                  // Thumbnail circle
                   Container(
                     width: 72,
                     height: 72,
@@ -232,7 +261,7 @@ class _CategoryTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 20),
 
-                  // Label and item count
+                  // Label + count
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
