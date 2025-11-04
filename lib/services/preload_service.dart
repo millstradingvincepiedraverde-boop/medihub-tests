@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../controllers/product_controller.dart';
@@ -177,10 +178,60 @@ class PreloadService {
   /// ------------------------------------------------------------
   /// Preload a single image
   /// ------------------------------------------------------------
+
   Future<void> _preloadImage(BuildContext context, String url) async {
     try {
       final imageProvider = NetworkImage(url);
-      await precacheImage(imageProvider, context);
+      
+      // Precache the image - this loads and decodes it into memory
+      // The size parameter helps ensure it's cached at a reasonable size
+      await precacheImage(
+        imageProvider,
+        context,
+        size: const Size(800, 800), // Preload at a good size for product images
+      );
+      
+      // Verify the image is actually in cache by trying to resolve it
+      // This ensures the image is fully decoded and ready
+      final imageStream = imageProvider.resolve(ImageConfiguration.empty);
+      
+      final completer = Completer<ImageInfo?>();
+      late ImageStreamListener listener;
+      bool isResolved = false;
+      
+      listener = ImageStreamListener(
+        (ImageInfo imageInfo, bool synchronousCall) {
+          if (!isResolved) {
+            isResolved = true;
+            // Keep a reference to the image to prevent garbage collection
+            // The imageInfo contains the decoded image data
+            completer.complete(imageInfo);
+            imageStream.removeListener(listener);
+          }
+        },
+        onError: (exception, stackTrace) {
+          if (!completer.isCompleted) {
+            completer.completeError(exception, stackTrace);
+          }
+          imageStream.removeListener(listener);
+        },
+      );
+      
+      imageStream.addListener(listener);
+      
+      // Wait for the image to be fully resolved (with timeout)
+      try {
+        await completer.future.timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            imageStream.removeListener(listener);
+            return null;
+          },
+        );
+      } catch (e) {
+        imageStream.removeListener(listener);
+        // Silently continue - image might still be in cache from precacheImage
+      }
     } catch (e) {
       // Silently fail for individual images - not critical
       if (kDebugMode) {

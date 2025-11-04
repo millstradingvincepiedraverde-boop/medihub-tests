@@ -14,6 +14,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: ".env");
+  // Set the maximum size of the image cache to 5000 images
+  PaintingBinding.instance.imageCache.maximumSize = 5000;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024; // 500 MB
 
   // ✅ Create one instance of OrderService
   final orderService = OrderService();
