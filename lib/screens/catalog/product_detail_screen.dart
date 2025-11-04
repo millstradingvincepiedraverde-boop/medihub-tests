@@ -233,15 +233,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 // Close Button
                 Positioned(
-                  top: 12,
-                  right: 12,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      size: 30,
-                      color: Colors.black,
+                  top: 40,
+                  right: 40,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color.fromARGB(255, 226, 226, 226), // background color of the circle
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        size: 24,
+                        color: Colors.black,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ),
                 ),
               ],

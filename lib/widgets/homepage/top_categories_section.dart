@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medihub_tests/models/product.dart';
 import 'package:medihub_tests/services/category_service.dart';
-import 'package:shimmer/shimmer.dart'; // ✅ Add shimmer package
+import 'package:shimmer/shimmer.dart';
 
 class TopCategoriesSection extends StatefulWidget {
   final Function(ProductCategory)? onCategoryTap;
@@ -18,7 +18,6 @@ class _TopCategoriesSectionState extends State<TopCategoriesSection> {
   bool _isLoading = true;
   String? _error;
 
-  /// ✅ Map category titles → ProductCategory
   final Map<String, ProductCategory> _categoryMap = {
     'Mobility Scooters': ProductCategory.mobilityScooters,
     'Rollators': ProductCategory.rollators,
@@ -55,63 +54,51 @@ class _TopCategoriesSectionState extends State<TopCategoriesSection> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return _buildSkeletonLoader(context);
-    }
-
-    if (_error != null) {
-      return Center(child: Text('Error loading categories: $_error'));
-    }
+    if (_isLoading) return _buildSkeletonLoader(context);
+    if (_error != null) return Center(child: Text('Error loading: $_error'));
 
     return Container(
       width: double.infinity,
       color: const Color(0xFFF5F5F5),
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Top Categories',
             style: TextStyle(
-              fontSize: 36,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
               color: Colors.black,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           LayoutBuilder(
             builder: (context, constraints) {
-              int crossAxisCount;
-              if (constraints.maxWidth > 1200) {
-                crossAxisCount = 2;
-              } else if (constraints.maxWidth > 600) {
-                crossAxisCount = 2;
-              } else {
-                crossAxisCount = 1;
-              }
+              int crossAxisCount = constraints.maxWidth > 600 ? 2 : 1;
 
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
-                  childAspectRatio: 1.5,
-                  crossAxisSpacing: 24,
-                  mainAxisSpacing: 24,
+                  childAspectRatio: 1.9, // ✅ Smaller, fits 2 cards nicely
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
                 ),
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
                   final category = _categories[index];
                   final title = category['title'] ?? 'Unnamed';
                   final imageUrl = category['imageUrl'] ?? '';
-
                   final ProductCategory mappedCategory =
                       _categoryMap[title] ?? ProductCategory.unknown;
 
                   return _CategoryCard(
                     title: title,
-                    description: category['description'] ??
+                    description:
+                        category['description'] ??
                         'We offer a wide range of styles and sizes.',
                     imageUrl: imageUrl,
                     onTap: () {
@@ -128,12 +115,12 @@ class _TopCategoriesSectionState extends State<TopCategoriesSection> {
     );
   }
 
-  /// 🦴 Skeleton loader with shimmer effect
+  /// 🦴 Skeleton loader
   Widget _buildSkeletonLoader(BuildContext context) {
     return Container(
       width: double.infinity,
       color: const Color(0xFFF5F5F5),
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -141,33 +128,25 @@ class _TopCategoriesSectionState extends State<TopCategoriesSection> {
             baseColor: Colors.grey.shade300,
             highlightColor: Colors.grey.shade100,
             child: Container(
-              height: 36,
+              height: 32,
               width: 200,
               color: Colors.white,
-              margin: const EdgeInsets.only(bottom: 32),
+              margin: const EdgeInsets.only(bottom: 28),
             ),
           ),
           LayoutBuilder(
             builder: (context, constraints) {
-              int crossAxisCount;
-              if (constraints.maxWidth > 1200) {
-                crossAxisCount = 2;
-              } else if (constraints.maxWidth > 600) {
-                crossAxisCount = 2;
-              } else {
-                crossAxisCount = 1;
-              }
-
+              int crossAxisCount = constraints.maxWidth > 600 ? 2 : 1;
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
-                  childAspectRatio: 1.5,
-                  crossAxisSpacing: 24,
-                  mainAxisSpacing: 24,
+                  childAspectRatio: 1.9,
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
                 ),
-                itemCount: 4, // number of skeleton cards
+                itemCount: 4,
                 itemBuilder: (context, index) {
                   return Shimmer.fromColors(
                     baseColor: Colors.grey.shade300,
@@ -177,45 +156,7 @@ class _TopCategoriesSectionState extends State<TopCategoriesSection> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.all(24),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  height: 24,
-                                  width: 150,
-                                  color: Colors.white,
-                                  margin:
-                                      const EdgeInsets.only(bottom: 12),
-                                ),
-                                Container(
-                                  height: 16,
-                                  width: 220,
-                                  color: Colors.white,
-                                  margin:
-                                      const EdgeInsets.only(bottom: 8),
-                                ),
-                                Container(
-                                  height: 16,
-                                  width: 180,
-                                  color: Colors.white,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 2,
-                            child: Container(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
+                      padding: const EdgeInsets.all(20),
                     ),
                   );
                 },
@@ -228,6 +169,7 @@ class _TopCategoriesSectionState extends State<TopCategoriesSection> {
   }
 }
 
+/// ✅ Compact, elegant card
 class _CategoryCard extends StatelessWidget {
   final String title;
   final String description;
@@ -247,66 +189,64 @@ class _CategoryCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
           color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           child: Stack(
             children: [
+              // 🖼️ Product image (bottom-right)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: imageUrl.isNotEmpty
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.contain,
+                        height: 180, // ✅ smaller
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (_, __, ___) => const SizedBox(),
+                      )
+                    : const SizedBox(),
+              ),
+
+              // 📝 Text overlay
               Padding(
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
                         color: Colors.black,
                         height: 1.2,
-                        letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black87,
-                        height: 1.4,
+                    SizedBox(
+                      width: 180,
+                      child: Text(
+                        description,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                          height: 1.4,
+                        ),
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                ),
-              ),
-              Positioned(
-                bottom: -20,
-                right: -10,
-                child: SizedBox(
-                  width: 280,
-                  height: 240,
-                  child: imageUrl.isNotEmpty
-                      ? Image.network(
-                          imageUrl,
-                          fit: BoxFit.contain,
-                          alignment: Alignment.bottomRight,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Icon(Icons.image_not_supported,
-                                  color: Colors.grey[300], size: 60),
-                        )
-                      : Icon(Icons.image_not_supported,
-                          color: Colors.grey[300], size: 60),
                 ),
               ),
             ],

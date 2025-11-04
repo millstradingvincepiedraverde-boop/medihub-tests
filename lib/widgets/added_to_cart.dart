@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import '../screens/cart/cart_screen.dart';
+import 'cart_bottom_sheet_widget.dart';
 
 class ItemAddedDialog extends StatefulWidget {
   final String itemName;
@@ -33,19 +33,19 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
   void initState() {
     super.initState();
 
-    // 🖼️ Image "pop" animation
+    // 🖼️ Image "pop" animation (faster, tighter curve)
     _imageController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 450),
       vsync: this,
     );
     _imageScale = CurvedAnimation(
       parent: _imageController,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutBack,
     );
 
-    // 🪩 Text "pop" animation
+    // 🪩 Text "pop" animation (starts with image)
     _textController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 450),
       vsync: this,
     );
     _textScale = CurvedAnimation(
@@ -56,26 +56,19 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
     // 🎞️ Lottie animation controller
     _lottieController = AnimationController(vsync: this);
 
-    // 🪄 Animation sequence
+    // 🚀 Start all together (no long delays)
     _startSequence();
   }
 
   Future<void> _startSequence() async {
-    // Image first
     if (!mounted) return;
-    await _imageController.forward();
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
+    // Start image & text simultaneously
+    _imageController.forward();
+    _textController.forward();
 
-    // Then text
-    await _textController.forward();
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-
-    // Then show Lottie animation
-    if (mounted) {
-      setState(() => _showLottie = true);
-    }
+    // Show Lottie quickly after a short delay (syncs with pop)
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (mounted) setState(() => _showLottie = true);
   }
 
   @override
@@ -97,35 +90,42 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
       rootNavigator: true,
     ).popUntil((route) => route.isFirst);
 
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: "Cart",
-      transitionDuration: const Duration(milliseconds: 400),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: FractionallySizedBox(
-            heightFactor: 0.85,
-            widthFactor: 1.0,
-            child: const CartScreen(),
-          ),
-        );
-      },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeInOutCubic,
-        );
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(curved),
-          child: child,
-        );
-      },
-    );
+    // Small delay ensures the stack stabilizes
+    Future.delayed(const Duration(milliseconds: 80), () {
+      showGeneralDialog(
+        context: context,
+        barrierDismissible: true,
+        barrierLabel: "Cart",
+        barrierColor: Colors.black.withOpacity(0.45),
+        transitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: FractionallySizedBox(
+              heightFactor: 0.85,
+              widthFactor: 1.0,
+              child: const CartBottomSheet(),
+            ),
+          );
+        },
+        transitionBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.95),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
+          );
+        },
+      );
+    });
   }
 
   @override
@@ -189,16 +189,16 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 30),
 
               // 🎞️ Lottie animation (success)
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 600),
+                duration: const Duration(milliseconds: 400),
                 switchInCurve: Curves.easeOutCubic,
                 child: _showLottie
                     ? Lottie.asset(
-                        'assets/animations/success.json',
-                        key: const ValueKey('successLottie'),
+                        'assets/animations/lottie-check.json',
+                        key: const ValueKey('lottie-check'),
                         controller: _lottieController,
                         onLoaded: (composition) {
                           if (mounted) {
@@ -207,16 +207,16 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                               ..forward();
                           }
                         },
-                        width: 180,
-                        height: 180,
+                        width: 160,
+                        height: 160,
                         repeat: false,
                       )
-                    : const SizedBox(height: 180),
+                    : const SizedBox(height: 160),
               ),
 
               const SizedBox(height: 50),
 
-              // Buttons
+              // 🛍️ Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -229,16 +229,16 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        padding: const EdgeInsets.symmetric(vertical: 28),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       child: const Text(
                         "Continue Shopping",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 34,
+                          fontSize: 26,
                         ),
                       ),
                     ),
@@ -253,16 +253,16 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4A2E8E),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        padding: const EdgeInsets.symmetric(vertical: 28),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       child: const Text(
                         "View Cart & Pay",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 34,
+                          fontSize: 26,
                         ),
                       ),
                     ),
