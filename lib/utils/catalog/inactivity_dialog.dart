@@ -50,92 +50,109 @@ class _InactivityDialogState extends State<InactivityDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 420,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+    return Stack(
+      children: [
+        // 🔹 Dimmed overlay background for modal emphasis
+        Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
+
+        // 🔹 Centered wide modal box
+        Center(
+          child: Container(
+            width: 600, // ⬅️ wider for modal presence
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 0,
-              right: 0,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.black54),
-                onPressed: () {
-                  _dialogTimer?.cancel();
-                  Navigator.of(context).pop();
-                  widget.onExtendSession();
-                },
-              ),
-            ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Stack(
               children: [
-                const SizedBox(height: 16),
-                const Text(
-                  "We've noticed an inactivity",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                    decoration: TextDecoration.none,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Closing this session in $countdown seconds...",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                    decoration: TextDecoration.none,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: ElevatedButton(
+                // 🔹 Close button (top-right)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.black54,
+                      size: 28,
+                    ),
                     onPressed: () {
                       _dialogTimer?.cancel();
                       Navigator.of(context).pop();
                       widget.onExtendSession();
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4A306D),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      "Extend session",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                   ),
+                ),
+
+                // 🔹 Main content
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    const Text(
+                      "We've noticed an inactivity",
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Closing this session in $countdown seconds...",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.black54,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _dialogTimer?.cancel();
+                          Navigator.of(context).pop();
+                          widget.onExtendSession();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4A306D),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 28,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 3,
+                        ),
+                        child: const Text(
+                          "Extend session",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

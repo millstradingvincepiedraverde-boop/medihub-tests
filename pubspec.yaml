@@ -54,8 +54,6 @@ flutter:
           weight: 500
         - asset: assets/fonts/GTWalsheimPro-Bold.ttf
           weight: 700
-  
-
 
   assets:
     - assets/images/
