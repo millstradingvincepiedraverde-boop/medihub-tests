@@ -31,7 +31,6 @@ class _BottomCartButtonState extends State<BottomCartButton> {
               child: Material(
                 color: Colors.transparent,
                 child: GestureDetector(
-                  // Prevent drag gestures from bubbling to background
                   onVerticalDragStart: (_) {},
                   child: const CartBottomSheet(),
                 ),
@@ -65,6 +64,7 @@ class _BottomCartButtonState extends State<BottomCartButton> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
+    // 🔹 Responsive breakpoints
     final bool isMobile = screenWidth < 600;
     final bool isTablet = screenWidth >= 600 && screenWidth < 1024;
     final bool isDesktop = screenWidth >= 1024;
@@ -102,190 +102,282 @@ class _BottomCartButtonState extends State<BottomCartButton> {
           child: SafeArea(
             top: false,
             child: isMobile
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 🛒 Cart Info
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          Icon(Icons.shopping_cart,
-                              color: Colors.white, size: iconSize),
-                          Text(
-                            '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
-                            style: TextStyle(
-                              fontSize: fontSizeSmall,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const Text('•',
-                              style: TextStyle(
-                                  color: Colors.white70,
-                                  fontWeight: FontWeight.bold)),
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                '\$${total.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: fontSizeLarge,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed:
-                              itemCount > 0 ? () => _openCart(context) : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF4A306D),
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            disabledBackgroundColor: Colors.grey.shade300,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Flexible(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    'View Orders and Pay',
-                                    style: TextStyle(
-                                      fontSize: buttonFontSize,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (itemCount > 0) ...[
-                                const SizedBox(width: 10),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF4A306D),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    '$itemCount',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: buttonFontSize - 2,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                ? _buildMobileLayout(
+                    itemCount,
+                    total,
+                    iconSize,
+                    fontSizeSmall,
+                    fontSizeLarge,
+                    buttonFontSize,
                   )
-                : Row(
-                    children: [
-                      // 🛍️ Cart Info Section
-                      Expanded(
-                        flex: 1,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Icon(Icons.shopping_cart,
-                                color: Colors.white, size: iconSize),
-                            const SizedBox(width: 12),
-                            Flexible(
-                              child: Text(
-                                '$itemCount ${itemCount == 1 ? 'item' : 'items'}  •  \$${total.toStringAsFixed(2)}',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: fontSizeLarge,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 24),
-
-                      // 💳 View Orders Button
-                      Expanded(
-                        flex: 2,
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed:
-                                itemCount > 0 ? () => _openCart(context) : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF4A306D),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 26.0),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              disabledBackgroundColor: Colors.grey.shade300,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      'View Orders and Pay',
-                                      style: TextStyle(
-                                        fontSize: buttonFontSize,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (itemCount > 0) ...[
-                                  const SizedBox(width: 10),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF4A306D),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Text(
-                                      '$itemCount',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: buttonFontSize - 2,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                : (isTablet
+                      ? _buildTabletLayout(
+                          itemCount,
+                          total,
+                          iconSize,
+                          fontSizeSmall,
+                          fontSizeLarge,
+                          buttonFontSize,
+                        )
+                      : _buildDesktopLayout(
+                          itemCount,
+                          total,
+                          iconSize,
+                          fontSizeSmall,
+                          fontSizeLarge,
+                          buttonFontSize,
+                        )),
           ),
         );
       },
+    );
+  }
+
+  // 📱 MOBILE LAYOUT (<600px)
+  Widget _buildMobileLayout(
+    int itemCount,
+    double total,
+    double iconSize,
+    double fontSizeSmall,
+    double fontSizeLarge,
+    double buttonFontSize,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 🛒 Cart Info
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            Icon(Icons.shopping_cart, color: Colors.white, size: iconSize),
+            Text(
+              '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
+              style: TextStyle(
+                fontSize: fontSizeSmall,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            const Text(
+              '•',
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '\$${total.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: fontSizeLarge,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // 💳 View Orders and Pay Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: itemCount > 0 ? () => _openCart(context) : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF4A306D),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              disabledBackgroundColor: Colors.grey.shade300,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'View Orders and Pay',
+                      style: TextStyle(
+                        fontSize: buttonFontSize,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                if (itemCount > 0) ...[
+                  const SizedBox(width: 10),
+                  _cartBadge(itemCount, buttonFontSize),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 💻 TABLET LAYOUT (600px - 1023px)
+  Widget _buildTabletLayout(
+    int itemCount,
+    double total,
+    double iconSize,
+    double fontSizeSmall,
+    double fontSizeLarge,
+    double buttonFontSize,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 1,
+          child: Row(
+            children: [
+              Icon(Icons.shopping_cart, color: Colors.white, size: iconSize),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  '$itemCount ${itemCount == 1 ? 'item' : 'items'}  •  \$${total.toStringAsFixed(2)}',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: fontSizeLarge,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          flex: 2,
+          child: ElevatedButton(
+            onPressed: itemCount > 0 ? () => _openCart(context) : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF4A306D),
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              disabledBackgroundColor: Colors.grey.shade300,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'View Orders and Pay',
+                      style: TextStyle(
+                        fontSize: buttonFontSize,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                if (itemCount > 0) ...[
+                  const SizedBox(width: 10),
+                  _cartBadge(itemCount, buttonFontSize),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 🖥️ DESKTOP LAYOUT (>=1024px)
+  Widget _buildDesktopLayout(
+    int itemCount,
+    double total,
+    double iconSize,
+    double fontSizeSmall,
+    double fontSizeLarge,
+    double buttonFontSize,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 1,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Icon(Icons.shopping_cart, color: Colors.white, size: iconSize),
+              const SizedBox(width: 12),
+              Text(
+                '$itemCount ${itemCount == 1 ? 'item' : 'items'}  •  \$${total.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: fontSizeLarge,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: ElevatedButton(
+            onPressed: itemCount > 0 ? () => _openCart(context) : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF4A306D),
+              padding: const EdgeInsets.symmetric(vertical: 28.0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              disabledBackgroundColor: Colors.grey.shade300,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'View Orders and Pay',
+                  style: TextStyle(
+                    fontSize: buttonFontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (itemCount > 0) ...[
+                  const SizedBox(width: 10),
+                  _cartBadge(itemCount, buttonFontSize),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 🔹 Reusable cart badge widget
+  Widget _cartBadge(int count, double fontSize) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFF4A306D),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$count',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: fontSize - 2,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
