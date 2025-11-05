@@ -16,15 +16,29 @@ import 'package:medihub_tests/widgets/checkout/order_summary.dart';
 import 'package:medihub_tests/widgets/checkout/section_title.dart';
 import 'package:medihub_tests/widgets/checkout/submit_buttons.dart';
 
-class CustomerInfoScreen extends StatefulWidget {
-  const CustomerInfoScreen({super.key});
-
-  @override
-  State<CustomerInfoScreen> createState() => _CustomerInfoScreenState();
+/// Shows the customer info checkout modal
+Future<void> showCustomerInfoModal(BuildContext context) {
+  return showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withOpacity(0.5),
+    isDismissible: true,
+    enableDrag: false,
+    constraints: const BoxConstraints(maxWidth: double.infinity),
+    builder: (context) => const CustomerInfoBottomSheet(),
+  );
 }
 
-class _CustomerInfoScreenState extends State<CustomerInfoScreen>
-    with SingleTickerProviderStateMixin {
+class CustomerInfoBottomSheet extends StatefulWidget {
+  const CustomerInfoBottomSheet({super.key});
+
+  @override
+  State<CustomerInfoBottomSheet> createState() =>
+      _CustomerInfoBottomSheetState();
+}
+
+class _CustomerInfoBottomSheetState extends State<CustomerInfoBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _orderService = OrderService();
   final _postageService = PostageService();
@@ -45,11 +59,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   String _deliveryMethod = 'standard';
   List<PostageRate> _postageRates = [];
   bool _isLoadingRates = false;
-
-  // Animations
-  late AnimationController _controller;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _fadeAnimation;
 
   // Google Places
   FlutterGooglePlacesSdk? _places;
@@ -75,7 +84,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         : '2000'; // ✅ default postcode
     _controllers['city']?.text = customer.city;
     _controllers['state']?.text = customer.state;
-    _initAnimation();
+
     _setupListeners();
     _initializePlaces();
 
@@ -84,24 +93,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         : '2000';
     _fetchPostageRates(initialPostcode);
   }
-
-
-  void _initAnimation() {
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
-    _slideAnimation = Tween(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-    _fadeAnimation = Tween(
-      begin: 0.0,
-      end: 0.6,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-    _controller.forward();
-  }
-
 
   void _setupListeners() {
     _controllers['address']!.addListener(_onAddressChanged);
@@ -416,7 +407,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   // 🧹 Cleanup
   @override
   void dispose() {
-    _controller.dispose();
     for (var c in _controllers.values) {
       c.dispose();
     }
@@ -433,115 +423,96 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
     return Material(
       color: Colors.transparent,
-      child: Stack(
-        children: [
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: GestureDetector(
-              onTap: () {
-                _removeOverlay();
-                Navigator.pop(context);
-              },
-              child: Container(color: Colors.black.withOpacity(0.5)),
-            ),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          width: double.infinity,
+          height: size.height * 0.85,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 30,
+                offset: Offset(0, -10),
+              ),
+            ],
           ),
-          SlideTransition(
-            position: _slideAnimation,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                width: double.infinity,
-                height: size.height * 0.85,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 30,
-                      offset: Offset(0, -10),
-                    ),
-                  ],
+          child: Column(
+            children: [
+              // Drag handle
+              Container(
+                width: 50,
+                height: 5,
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(3),
                 ),
-                child: Column(
+              ),
+              // Header
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  isMobile ? 24 : 40,
+                  isMobile ? 12 : 20,
+                  isMobile ? 16 : 24,
+                  isMobile ? 12 : 20,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Drag handle
-                    Container(
-                      width: 50,
-                      height: 5,
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(3),
+                    Text(
+                      'Checkout',
+                      style: TextStyle(
+                        fontFamily: CheckoutTheme.fontFamily,
+                        fontSize: isMobile ? 28 : 36,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF191919),
                       ),
                     ),
-                    // Header
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        isMobile ? 24 : 40,
-                        isMobile ? 12 : 20,
-                        isMobile ? 16 : 24,
-                        isMobile ? 12 : 20,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Checkout',
-                            style: TextStyle(
-                              fontFamily: CheckoutTheme.fontFamily,
-                              fontSize: isMobile ? 28 : 36,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF191919),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: Icon(
-                              Icons.close,
-                              color: Colors.black,
-                              size: isMobile ? 28 : 32,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Content
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Padding(
-                          padding: EdgeInsets.all(isMobile ? 24 : 40),
-                          child: isMobile
-                              ? Column(
-                                  children: [
-                                    _buildFormSection(isMobile),
-                                    const SizedBox(height: 24),
-                                    _buildSummarySection(isMobile),
-                                  ],
-                                )
-                              : Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: 3,
-                                      child: _buildFormSection(isMobile),
-                                    ),
-                                    const SizedBox(width: 32),
-                                    Expanded(
-                                      flex: 2,
-                                      child: _buildSummarySection(isMobile),
-                                    ),
-                                  ],
-                                ),
-                        ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.black,
+                        size: isMobile ? 28 : 32,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(isMobile ? 24 : 40),
+                  child: isMobile
+                      ? Column(
+                          children: [
+                            _buildFormSection(isMobile),
+                            const SizedBox(height: 24),
+                            _buildSummarySection(isMobile),
+                          ],
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: _buildFormSection(isMobile),
+                            ),
+                            const SizedBox(width: 32),
+                            Expanded(
+                              flex: 2,
+                              child: _buildSummarySection(isMobile),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

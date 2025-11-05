@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:medihub_tests/widgets/bottom_cart_button.dart';
 import 'cart_bottom_sheet_widget.dart';
 
 class ItemAddedDialog extends StatefulWidget {
@@ -104,7 +105,7 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
             child: FractionallySizedBox(
               heightFactor: 0.85,
               widthFactor: 1.0,
-              child: const CartBottomSheet(),
+              child: const BottomCartButton(),
             ),
           );
         },

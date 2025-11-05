@@ -588,14 +588,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
           flex: 2,
           child: ElevatedButton(
             onPressed: cartItems.isNotEmpty
-                ? () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CustomerInfoScreen(),
-                        fullscreenDialog: true,
-                      ),
-                    );
-                  }
+                ? () => showCustomerInfoModal(context)
                 : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4A306D),
