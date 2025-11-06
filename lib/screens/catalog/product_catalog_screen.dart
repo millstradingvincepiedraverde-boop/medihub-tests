@@ -71,8 +71,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     super.dispose();
   }
 
-  
-
   void _startInactivityTimer() {
     _cancelInactivityTimer();
     logDebug('⏱️ Timer started (${_inactivityTimeout.inSeconds}s)');
@@ -328,7 +326,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 _updateBreadcrumbPath(category: category, subType: null);
               },
             ),
-            const QRCodeBanner(),
           ],
         ),
       ),
@@ -435,6 +432,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const QRCodeBanner(),
             BottomCartButton(key: ValueKey(_orderService.cartItemCount)),
             const FooterWidget(),
           ],
