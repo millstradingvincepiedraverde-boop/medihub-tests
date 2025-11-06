@@ -59,6 +59,11 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
 
+
+  final FocusNode emailField = FocusNode();
+  final FocusNode phoneField = FocusNode();
+  
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +111,22 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   void _setupListeners() {
     _controllers['address']!.addListener(_onAddressChanged);
     _addressFocusNode.addListener(_onAddressFocusChanged);
+
+    emailField.addListener(() {
+      if (!emailField.hasFocus) {
+        syncCart();
+      }
+    });
+
+    phoneField.addListener(() {
+      if (!phoneField.hasFocus) {
+        syncCart();
+      }
+    });
+  }
+
+  void syncCart() {
+    _orderService.syncCart();
   }
 
   Future<void> _initializePlaces() async {
@@ -413,6 +434,10 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     }
   }
 
+  void triggerSync() {
+    _orderService.syncCart();
+  }
+
   // 🧹 Cleanup
   @override
   void dispose() {
@@ -576,6 +601,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
               keyboardType: TextInputType.emailAddress,
               validator: (v) => v!.isEmpty ? "Email is required" : null,
               onChanged: (v) => customer.email = v,
+              focusNode: emailField
             ),
             const SizedBox(height: 18),
 
@@ -585,6 +611,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
               keyboardType: TextInputType.phone,
               validator: (v) => v!.isEmpty ? "Phone number is required" : null,
               onChanged: (v) => customer.phone = v,
+              focusNode: phoneField
             ),
             const SizedBox(height: 28),
 

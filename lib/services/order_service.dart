@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http; // Or import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
@@ -116,5 +118,37 @@ class OrderService extends ChangeNotifier {
     notifyListeners();
 
     return order;
+  }
+
+  Future<void> syncCart() async {
+
+    final order = Order(
+      id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
+      items: List.from(_cartItems),
+      orderDate: DateTime.now(),
+      customerName: customer.fullName,
+      customerEmail: customer.email,
+      customerPhone: customer.phone,
+      deliveryAddress:
+          '${customer.address}, ${customer.city}, ${customer.state} ${customer.postcode}',
+    );
+
+    final response = await http.post(
+      Uri.parse('http://10.10.10.205:5173/api/v1/upsert-app-cart-shopify'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(order.toJson()),
+    );
+
+    if (response.statusCode == 201) {
+      // Request successful, parse the JSON response
+      final data = jsonDecode(response.body);
+      print(data);
+    } else {
+      // Request failed
+      throw Exception('Failed to create post');
+    }
+    print(order.toJson());
   }
 }
