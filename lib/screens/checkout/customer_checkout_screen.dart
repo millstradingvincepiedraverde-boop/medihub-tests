@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:medihub_tests/models/customer.dart';
 import 'package:medihub_tests/models/postage_rate.dart';
 import 'package:medihub_tests/screens/checkout/order_confirmation_screen.dart';
@@ -16,15 +17,29 @@ import 'package:medihub_tests/widgets/checkout/order_summary.dart';
 import 'package:medihub_tests/widgets/checkout/section_title.dart';
 import 'package:medihub_tests/widgets/checkout/submit_buttons.dart';
 
-class CustomerInfoScreen extends StatefulWidget {
-  const CustomerInfoScreen({super.key});
-
-  @override
-  State<CustomerInfoScreen> createState() => _CustomerInfoScreenState();
+/// Shows the customer info checkout modal
+Future<void> showCustomerInfoModal(BuildContext context) {
+  return showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withOpacity(0.5),
+    isDismissible: true,
+    enableDrag: false,
+    constraints: const BoxConstraints(maxWidth: double.infinity),
+    builder: (context) => const CustomerInfoBottomSheet(),
+  );
 }
 
-class _CustomerInfoScreenState extends State<CustomerInfoScreen>
-    with SingleTickerProviderStateMixin {
+class CustomerInfoBottomSheet extends StatefulWidget {
+  const CustomerInfoBottomSheet({super.key});
+
+  @override
+  State<CustomerInfoBottomSheet> createState() =>
+      _CustomerInfoBottomSheetState();
+}
+
+class _CustomerInfoBottomSheetState extends State<CustomerInfoBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _orderService = OrderService();
   final _postageService = PostageService();
@@ -45,11 +60,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   String _deliveryMethod = 'standard';
   List<PostageRate> _postageRates = [];
   bool _isLoadingRates = false;
-
-  // Animations
-  late AnimationController _controller;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _fadeAnimation;
 
   // Google Places
   FlutterGooglePlacesSdk? _places;
@@ -75,7 +85,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         : '2000'; // ✅ default postcode
     _controllers['city']?.text = customer.city;
     _controllers['state']?.text = customer.state;
-    _initAnimation();
+
     _setupListeners();
     _initializePlaces();
 
@@ -84,24 +94,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
         : '2000';
     _fetchPostageRates(initialPostcode);
   }
-
-
-  void _initAnimation() {
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
-    _slideAnimation = Tween(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-    _fadeAnimation = Tween(
-      begin: 0.0,
-      end: 0.6,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-    _controller.forward();
-  }
-
 
   void _setupListeners() {
     _controllers['address']!.addListener(_onAddressChanged);
@@ -416,7 +408,6 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
   // 🧹 Cleanup
   @override
   void dispose() {
-    _controller.dispose();
     for (var c in _controllers.values) {
       c.dispose();
     }
@@ -433,115 +424,96 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
 
     return Material(
       color: Colors.transparent,
-      child: Stack(
-        children: [
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: GestureDetector(
-              onTap: () {
-                _removeOverlay();
-                Navigator.pop(context);
-              },
-              child: Container(color: Colors.black.withOpacity(0.5)),
-            ),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          width: double.infinity,
+          height: size.height * 0.85,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 30,
+                offset: Offset(0, -10),
+              ),
+            ],
           ),
-          SlideTransition(
-            position: _slideAnimation,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                width: double.infinity,
-                height: size.height * 0.85,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 30,
-                      offset: Offset(0, -10),
-                    ),
-                  ],
+          child: Column(
+            children: [
+              // Drag handle
+              Container(
+                width: 50,
+                height: 5,
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(3),
                 ),
-                child: Column(
+              ),
+              // Header
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  isMobile ? 24 : 40,
+                  isMobile ? 12 : 20,
+                  isMobile ? 16 : 24,
+                  isMobile ? 12 : 20,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Drag handle
-                    Container(
-                      width: 50,
-                      height: 5,
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(3),
+                    Text(
+                      'Checkout',
+                      style: TextStyle(
+                        fontFamily: CheckoutTheme.fontFamily,
+                        fontSize: isMobile ? 28 : 36,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF191919),
                       ),
                     ),
-                    // Header
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        isMobile ? 24 : 40,
-                        isMobile ? 12 : 20,
-                        isMobile ? 16 : 24,
-                        isMobile ? 12 : 20,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Checkout',
-                            style: TextStyle(
-                              fontFamily: CheckoutTheme.fontFamily,
-                              fontSize: isMobile ? 28 : 36,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF191919),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: Icon(
-                              Icons.close,
-                              color: Colors.black,
-                              size: isMobile ? 28 : 32,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Content
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Padding(
-                          padding: EdgeInsets.all(isMobile ? 24 : 40),
-                          child: isMobile
-                              ? Column(
-                                  children: [
-                                    _buildFormSection(isMobile),
-                                    const SizedBox(height: 24),
-                                    _buildSummarySection(isMobile),
-                                  ],
-                                )
-                              : Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: 3,
-                                      child: _buildFormSection(isMobile),
-                                    ),
-                                    const SizedBox(width: 32),
-                                    Expanded(
-                                      flex: 2,
-                                      child: _buildSummarySection(isMobile),
-                                    ),
-                                  ],
-                                ),
-                        ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.black,
+                        size: isMobile ? 28 : 32,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(isMobile ? 24 : 40),
+                  child: isMobile
+                      ? Column(
+                          children: [
+                            _buildFormSection(isMobile),
+                            const SizedBox(height: 24),
+                            _buildSummarySection(isMobile),
+                          ],
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: _buildFormSection(isMobile),
+                            ),
+                            const SizedBox(width: 32),
+                            Expanded(
+                              flex: 2,
+                              child: _buildSummarySection(isMobile),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -551,148 +523,221 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
     final orderService = Provider.of<OrderService>(context);
     final customer = orderService.customer;
 
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 20 : 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Contact Info ---
-            CustomTextField(
-              controller: _controllers['email']!,
-              label: "Email address*",
-              keyboardType: TextInputType.emailAddress,
-              validator: (v) => v!.isEmpty ? "Email is required" : null,
-              onChanged: (v) => customer.email = v,
-            ),
-            const SizedBox(height: 18),
-
-            CustomTextField(
-              controller: _controllers['phone']!,
-              label: "Phone number*",
-              keyboardType: TextInputType.phone,
-              validator: (v) => v!.isEmpty ? "Phone number is required" : null,
-              onChanged: (v) => customer.phone = v,
-            ),
-            const SizedBox(height: 28),
-
-            // --- Delivery Options ---
-            SectionTitle('Delivery Details', isMobile: isMobile),
-            const SizedBox(height: 16),
-
-            DeliveryOptions(
-              isLoading: _isLoadingRates,
-              rates: _postageRates,
-              selectedMethod: _deliveryMethod,
-              onMethodChanged: (method) {
-                setState(() => _deliveryMethod = method);
-                customer.deliveryMethod = method;
-              },
-            ),
-            const SizedBox(height: 28),
-
-            // --- Billing Info ---
-            SectionTitle('Billing Details', isMobile: isMobile),
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: CustomTextField(
-                    controller: _controllers['firstName']!,
-                    label: "First Name*",
-                    validator: (v) => v!.isEmpty ? "Required" : null,
-                    onChanged: (v) => customer.firstName = v,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CustomTextField(
-                    controller: _controllers['lastName']!,
-                    label: "Last Name*",
-                    validator: (v) => v!.isEmpty ? "Required" : null,
-                    onChanged: (v) => customer.lastName = v,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            CompositedTransformTarget(
-              link: _layerLink,
-              child: CustomTextField(
-                controller: _controllers['address']!,
-                label: "Billing address*",
-                focusNode: _addressFocusNode,
-                validator: (v) => v!.isEmpty ? "Address is required" : null,
-                onChanged: (v) => customer.address = v,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: EdgeInsets.all(isMobile ? 20 : 32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
-            ),
-            const SizedBox(height: 16),
-
-            Row(
+            ],
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  flex: 2,
+                // --- Contact Info ---
+                CustomTextField(
+                  controller: _controllers['email']!,
+                  label: "Email address*",
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) => v!.isEmpty ? "Email is required" : null,
+                  onChanged: (v) => customer.email = v,
+                ),
+                const SizedBox(height: 18),
+
+                CustomTextField(
+                  controller: _controllers['phone']!,
+                  label: "Phone number*",
+                  keyboardType: TextInputType.phone,
+                  validator: (v) =>
+                      v!.isEmpty ? "Phone number is required" : null,
+                  onChanged: (v) => customer.phone = v,
+                ),
+                const SizedBox(height: 28),
+
+                // --- Delivery Options ---
+                SectionTitle('Delivery Details', isMobile: isMobile),
+                const SizedBox(height: 16),
+
+                DeliveryOptions(
+                  isLoading: _isLoadingRates,
+                  rates: _postageRates,
+                  selectedMethod: _deliveryMethod,
+                  onMethodChanged: (method) {
+                    setState(() => _deliveryMethod = method);
+                    customer.deliveryMethod = method;
+                  },
+                ),
+                const SizedBox(height: 28),
+
+                // --- Billing Info ---
+                SectionTitle('Billing Details', isMobile: isMobile),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomTextField(
+                        controller: _controllers['firstName']!,
+                        label: "First Name*",
+                        validator: (v) => v!.isEmpty ? "Required" : null,
+                        onChanged: (v) => customer.firstName = v,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomTextField(
+                        controller: _controllers['lastName']!,
+                        label: "Last Name*",
+                        validator: (v) => v!.isEmpty ? "Required" : null,
+                        onChanged: (v) => customer.lastName = v,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                CompositedTransformTarget(
+                  link: _layerLink,
                   child: CustomTextField(
-                    controller: _controllers['apt']!,
-                    label: "Apartment, suite. (optional)",
-                    onChanged: (v) => customer.apartment = v,
+                    controller: _controllers['address']!,
+                    label: "Billing address*",
+                    focusNode: _addressFocusNode,
+                    validator: (v) => v!.isEmpty ? "Address is required" : null,
+                    onChanged: (v) => customer.address = v,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CustomTextField(
-                    controller: _controllers['postcode']!,
-                    label: "Postcode*",
-                    keyboardType: TextInputType.number,
-                    onChanged: (v) {
-                      customer.postcode = v;
-                      _fetchPostageRates(v);
-                    },
-                  ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: CustomTextField(
+                        controller: _controllers['apt']!,
+                        label: "Apartment, suite. (optional)",
+                        onChanged: (v) => customer.apartment = v,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomTextField(
+                        controller: _controllers['postcode']!,
+                        label: "Postcode*",
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) {
+                          customer.postcode = v;
+                          _fetchPostageRates(v);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomTextField(
+                        controller: _controllers['city']!,
+                        label: "City",
+                        onChanged: (v) => customer.city = v,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomTextField(
+                        controller: _controllers['state']!,
+                        label: "State",
+                        onChanged: (v) => customer.state = v,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Payment buttons - INSIDE container
+                Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _submitOrder,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4A306D),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Pay now on terminal',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _submitOrder,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(
+                            color: Color(0xFF4A306D),
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Pay later with NDIS',
+                          style: TextStyle(
+                            color: Color(0xFF4A306D),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: CustomTextField(
-                    controller: _controllers['city']!,
-                    label: "City",
-                    onChanged: (v) => customer.city = v,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CustomTextField(
-                    controller: _controllers['state']!,
-                    label: "State",
-                    onChanged: (v) => customer.state = v,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            SubmitButtons(onSubmit: _submitOrder),
-          ],
+          ),
         ),
-      ),
+
+        // Payment icons - OUTSIDE container, positioned to the right of buttons
+        Positioned(
+          right: -180,
+          bottom: 80,
+          child: _buildPaymentIconsRow([
+            'assets/icons/visa-icon.svg',
+            'assets/icons/mastercard-icon.svg',
+            'assets/icons/amex-icon.svg',
+            'assets/icons/paypal-icon.svg',
+          ]),
+        ),
+        Positioned(
+          right: -60,
+          bottom: 16,
+          child: _buildPaymentIconsRow(['assets/icons/ndis.svg']),
+        ),
+      ],
     );
   }
 
@@ -704,6 +749,36 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen>
       deliveryMethod: _deliveryMethod,
       isMobile: isMobile,
       onEditCart: () => Navigator.pop(context),
+    );
+  }
+
+  Widget _buildPaymentIconsRow(List<String> assetPaths) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: assetPaths.map((path) {
+        return Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Container(
+            height: 28,
+            width: 40,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: SvgPicture.asset(
+              path.replaceAll('.png', '.svg'),
+              fit: BoxFit.contain,
+              placeholderBuilder: (context) => Icon(
+                Icons.credit_card,
+                size: 16,
+                color: Colors.grey.shade400,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

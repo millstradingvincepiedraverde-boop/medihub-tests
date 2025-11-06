@@ -215,7 +215,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       child: _buildLeftColumn(p),
                                     ),
                                   ),
-                                  Flexible(flex: 1, child: _buildRightColumn()),
+                                  Flexible(flex: 1, child: _buildRightColumn(p)),
                                 ],
                               )
                             : Column(
@@ -223,7 +223,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 children: [
                                   _buildLeftColumn(p),
                                   const SizedBox(height: 32),
-                                  _buildRightColumn(),
+                                  _buildRightColumn(p),
                                 ],
                               ),
                       ),
@@ -233,15 +233,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 // Close Button
                 Positioned(
-                  top: 12,
-                  right: 12,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      size: 30,
-                      color: Colors.black,
+                  top: 40,
+                  right: 40,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color.fromARGB(
+                        255,
+                        226,
+                        226,
+                        226,
+                      ), // background color of the circle
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        size: 24,
+                        color: Colors.black,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ),
                 ),
               ],
@@ -384,7 +395,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildRightColumn() {
+  Widget _buildRightColumn(Product product) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -398,6 +409,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         const SizedBox(height: 12),
         _infoBoxText({
+          "SKU": product.sku, // ✅ Add SKU here
           "Top Speed": "8km/h",
           "Range": "30km",
           "Weight Capacity": "136kg",

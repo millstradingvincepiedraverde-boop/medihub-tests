@@ -17,7 +17,7 @@ import 'package:medihub_tests/widgets/footer_widget.dart';
 import 'package:medihub_tests/models/product.dart';
 import 'package:medihub_tests/services/order_service.dart';
 import 'package:medihub_tests/widgets/bottom_cart_button.dart';
-import 'package:medihub_tests/widgets/hero_banner.dart';
+// import 'package:medihub_tests/widgets/hero_banner.dart';
 
 class ProductCatalogScreen extends StatefulWidget {
   const ProductCatalogScreen({super.key});
@@ -57,7 +57,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     Future.microtask(() {
       if (mounted) {
-        context.read<ProductController>().fetchProducts(forceRefresh: true);
+        // Use cached data - products should already be loaded from splash screen
+        context.read<ProductController>().fetchProducts(forceRefresh: false);
         _startInactivityTimer();
       }
     });
@@ -70,9 +71,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     super.dispose();
   }
 
-  // ============================================================================
-  // TIMER LOGIC
-  // ============================================================================
+  
 
   void _startInactivityTimer() {
     _cancelInactivityTimer();

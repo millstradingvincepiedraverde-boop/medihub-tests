@@ -29,7 +29,8 @@ class _ProductHomescreenScreenState extends State<ProductHomescreenScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      context.read<ProductController>().fetchProducts(forceRefresh: true);
+      // Use cached data - products should already be loaded from splash screen
+      context.read<ProductController>().fetchProducts(forceRefresh: false);
     });
   }
 

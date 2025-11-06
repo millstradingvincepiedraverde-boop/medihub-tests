@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import './screens/kiosk-main.dart';
+import './screens/splash_screen.dart';
 import './controllers/product_controller.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/order_service.dart';
@@ -14,6 +14,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: ".env");
+  // Set the maximum size of the image cache to 5000 images
+  PaintingBinding.instance.imageCache.maximumSize = 5000;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024; // 500 MB
 
   // ✅ Create one instance of OrderService
   final orderService = OrderService();
@@ -52,7 +55,7 @@ class WheelchairKioskApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'MediHub Demo Kiosk',
-      home: const KioskMain(),
+      home: const SplashScreen(),
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'GT Walsheim Pro',
