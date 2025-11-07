@@ -110,22 +110,22 @@ class _BottomCartButtonState extends State<BottomCartButton> {
                     buttonFontSize,
                   )
                 : (isTablet
-                      ? _buildTabletLayout(
-                          itemCount,
-                          total,
-                          iconSize,
-                          fontSizeSmall,
-                          fontSizeLarge,
-                          buttonFontSize,
-                        )
-                      : _buildDesktopLayout(
-                          itemCount,
-                          total,
-                          iconSize,
-                          fontSizeSmall,
-                          fontSizeLarge,
-                          buttonFontSize,
-                        )),
+                    ? _buildTabletLayout(
+                        itemCount,
+                        total,
+                        iconSize,
+                        fontSizeSmall,
+                        fontSizeLarge,
+                        buttonFontSize,
+                      )
+                    : _buildDesktopLayout(
+                        itemCount,
+                        total,
+                        iconSize,
+                        fontSizeSmall,
+                        fontSizeLarge,
+                        buttonFontSize,
+                      )),
           ),
         );
       },
@@ -363,7 +363,7 @@ class _BottomCartButtonState extends State<BottomCartButton> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFF4A306D),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(200),
       ),
       child: Text(
         '$count',
