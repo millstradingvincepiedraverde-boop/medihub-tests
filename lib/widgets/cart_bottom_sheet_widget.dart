@@ -172,7 +172,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
     final total = _orderService.cartTotal;
 
     return FractionallySizedBox(
-      heightFactor: 0.9,
+      heightFactor: 1.0,
       widthFactor: 1.0,
       child: Container(
         decoration: const BoxDecoration(
@@ -329,7 +329,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
 
   Widget _buildCartHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),
       color: Colors.white,
       child: const Row(
         children: [
@@ -340,7 +340,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 'Qty',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 24,
                   color: Colors.black54,
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.none,
@@ -354,7 +354,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 'Price',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 24,
                   color: Colors.black54,
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.none,
@@ -368,7 +368,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 'Total',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 24,
                   color: Colors.black54,
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.none,
@@ -388,8 +388,8 @@ class _CartBottomSheetState extends State<CartBottomSheet>
       child: Row(
         children: [
           Container(
-            width: 90,
-            height: 90,
+            width: 150,
+            height: 150,
             decoration: BoxDecoration(
               color:
                   cartItem.product.color?.withOpacity(0.1) ?? Colors.grey[100],
@@ -414,7 +414,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
             child: Text(
               cartItem.product.name,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
                 decoration: TextDecoration.none,
@@ -430,7 +430,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 '\$${cartItem.product.price.toStringAsFixed(0)}',
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.w500,
                   color: Colors.black87,
                   decoration: TextDecoration.none,
@@ -444,7 +444,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 '\$${cartItem.totalPrice.toStringAsFixed(0)}',
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                   decoration: TextDecoration.none,
@@ -483,7 +483,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
             }
           }),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               '${cartItem.quantity}',
               style: const TextStyle(
@@ -512,9 +512,9 @@ class _CartBottomSheetState extends State<CartBottomSheet>
       height: 30,
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.grey.shade300,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.black26, width: 1),
+       
       ),
       child: IconButton(
         padding: EdgeInsets.zero,

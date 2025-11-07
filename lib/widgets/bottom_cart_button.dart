@@ -64,7 +64,6 @@ class _BottomCartButtonState extends State<BottomCartButton> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // 🔹 Responsive breakpoints
     final bool isMobile = screenWidth < 600;
     final bool isTablet = screenWidth >= 600 && screenWidth < 1024;
     final bool isDesktop = screenWidth >= 1024;
@@ -133,7 +132,7 @@ class _BottomCartButtonState extends State<BottomCartButton> {
     );
   }
 
-  // 📱 MOBILE LAYOUT (<600px)
+  // 📱 MOBILE LAYOUT
   Widget _buildMobileLayout(
     int itemCount,
     double total,
@@ -145,7 +144,6 @@ class _BottomCartButtonState extends State<BottomCartButton> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 🛒 Cart Info
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -161,30 +159,21 @@ class _BottomCartButtonState extends State<BottomCartButton> {
                 color: Colors.white,
               ),
             ),
-            const Text(
-              '•',
-              style: TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  '\$${total.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: fontSizeLarge,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+            const Text('•', style: TextStyle(color: Colors.white70)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '\$${total.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: fontSizeLarge,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        // 💳 View Orders and Pay Button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -192,32 +181,30 @@ class _BottomCartButtonState extends State<BottomCartButton> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF4A306D),
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
               disabledBackgroundColor: Colors.grey.shade300,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'View Orders and Pay',
-                      style: TextStyle(
-                        fontSize: buttonFontSize,
-                        fontWeight: FontWeight.bold,
-                      ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'View Orders and Pay',
+                    style: TextStyle(
+                      fontSize: buttonFontSize,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                if (itemCount > 0) ...[
-                  const SizedBox(width: 10),
-                  _cartBadge(itemCount, buttonFontSize),
+                  if (itemCount > 0) ...[
+                    const SizedBox(width: 10),
+                    _cartBadge(itemCount, buttonFontSize),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -225,7 +212,7 @@ class _BottomCartButtonState extends State<BottomCartButton> {
     );
   }
 
-  // 💻 TABLET LAYOUT (600px - 1023px)
+  // 💻 TABLET LAYOUT
   Widget _buildTabletLayout(
     int itemCount,
     double total,
@@ -242,14 +229,17 @@ class _BottomCartButtonState extends State<BottomCartButton> {
             children: [
               Icon(Icons.shopping_cart, color: Colors.white, size: iconSize),
               const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  '$itemCount ${itemCount == 1 ? 'item' : 'items'}  •  \$${total.toStringAsFixed(2)}',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: fontSizeLarge,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '$itemCount ${itemCount == 1 ? 'item' : 'items'}  •  \$${total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: fontSizeLarge,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -270,26 +260,24 @@ class _BottomCartButtonState extends State<BottomCartButton> {
               ),
               disabledBackgroundColor: Colors.grey.shade300,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'View Orders and Pay',
-                      style: TextStyle(
-                        fontSize: buttonFontSize,
-                        fontWeight: FontWeight.bold,
-                      ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'View Orders and Pay',
+                    style: TextStyle(
+                      fontSize: buttonFontSize,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                if (itemCount > 0) ...[
-                  const SizedBox(width: 10),
-                  _cartBadge(itemCount, buttonFontSize),
+                  if (itemCount > 0) ...[
+                    const SizedBox(width: 10),
+                    _cartBadge(itemCount, buttonFontSize),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -297,7 +285,7 @@ class _BottomCartButtonState extends State<BottomCartButton> {
     );
   }
 
-  // 🖥️ DESKTOP LAYOUT (>=1024px)
+  // 🖥️ DESKTOP LAYOUT
   Widget _buildDesktopLayout(
     int itemCount,
     double total,
@@ -311,16 +299,21 @@ class _BottomCartButtonState extends State<BottomCartButton> {
         Expanded(
           flex: 1,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Icon(Icons.shopping_cart, color: Colors.white, size: iconSize),
               const SizedBox(width: 12),
-              Text(
-                '$itemCount ${itemCount == 1 ? 'item' : 'items'}  •  \$${total.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: fontSizeLarge,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '$itemCount ${itemCount == 1 ? 'item' : 'items'}  •  \$${total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: fontSizeLarge,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -334,27 +327,30 @@ class _BottomCartButtonState extends State<BottomCartButton> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF4A306D),
-              padding: const EdgeInsets.symmetric(vertical: 28.0),
+              padding: const EdgeInsets.symmetric(vertical: 28),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               disabledBackgroundColor: Colors.grey.shade300,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'View Orders and Pay',
-                  style: TextStyle(
-                    fontSize: buttonFontSize,
-                    fontWeight: FontWeight.bold,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'View Orders and Pay',
+                    style: TextStyle(
+                      fontSize: buttonFontSize,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                if (itemCount > 0) ...[
-                  const SizedBox(width: 10),
-                  _cartBadge(itemCount, buttonFontSize),
+                  if (itemCount > 0) ...[
+                    const SizedBox(width: 10),
+                    _cartBadge(itemCount, buttonFontSize),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -362,7 +358,6 @@ class _BottomCartButtonState extends State<BottomCartButton> {
     );
   }
 
-  // 🔹 Reusable cart badge widget
   Widget _cartBadge(int count, double fontSize) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

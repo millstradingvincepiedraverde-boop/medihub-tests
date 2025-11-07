@@ -105,7 +105,7 @@ class _ItemAddedDialogState extends State<ItemAddedDialog>
             child: FractionallySizedBox(
               heightFactor: 0.85,
               widthFactor: 1.0,
-              child: const BottomCartButton(),
+              child: const CartBottomSheet(),
             ),
           );
         },

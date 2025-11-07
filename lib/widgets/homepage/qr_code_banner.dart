@@ -19,8 +19,8 @@ class QRCodeBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _buildTextContent(centered: true),
-                const SizedBox(height: 24),
-                _buildQRCode(size: 130),
+                const SizedBox(height: 32),
+                _buildQRCode(size: 180), // ✅ Larger QR code for mobile
               ],
             );
           }
@@ -35,8 +35,8 @@ class QRCodeBanner extends StatelessWidget {
                   child: _buildTextContent(centered: false),
                 ),
               ),
-              const SizedBox(width: 48),
-              _buildQRCode(size: 130),
+              const SizedBox(width: 64),
+              _buildQRCode(size: 200), // ✅ Bigger QR code for desktop
             ],
           );
         },
@@ -47,40 +47,42 @@ class QRCodeBanner extends StatelessWidget {
   Widget _buildTextContent({bool centered = false}) {
     return Column(
       crossAxisAlignment: centered
-          ? CrossAxisAlignment.end
+          ? CrossAxisAlignment.center
           : CrossAxisAlignment.end,
-      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
           "Can’t decide on\nthe spot?",
           textAlign: TextAlign.right,
           style: TextStyle(
             color: Colors.white,
-            fontSize: 48, // larger and bolder
+            fontSize: 48,
             fontWeight: FontWeight.w800,
             height: 1.2,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           'Scan the QR code and shop from your phone.',
           textAlign: centered ? TextAlign.center : TextAlign.right,
-          style: TextStyle(color: Colors.grey[400], fontSize: 24, height: 1.5),
+          style: TextStyle(color: Colors.grey[400], fontSize: 22, height: 1.5),
         ),
       ],
     );
   }
 
-  Widget _buildQRCode({double size = 130}) {
+  Widget _buildQRCode({double size = 180}) {
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: const Center(
-        child: Icon(Icons.qr_code_2, size: 100, color: Colors.black),
+      padding: const EdgeInsets.all(24),
+      child: Image.asset(
+        'assets/icons/QRCode-Medihub.png',
+        fit: BoxFit.contain,
       ),
     );
   }
