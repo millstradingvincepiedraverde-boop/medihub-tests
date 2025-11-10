@@ -16,8 +16,8 @@ import 'package:medihub_tests/screens/kiosk-main.dart';
 import 'package:medihub_tests/widgets/footer_widget.dart';
 import 'package:medihub_tests/models/product.dart';
 import 'package:medihub_tests/services/order_service.dart';
+import 'package:medihub_tests/services/inactivity_service.dart'; // 🟢 Add this
 import 'package:medihub_tests/widgets/bottom_cart_button.dart';
-// import 'package:medihub_tests/widgets/hero_banner.dart';
 
 class ProductCatalogScreen extends StatefulWidget {
   const ProductCatalogScreen({super.key});
@@ -28,9 +28,10 @@ class ProductCatalogScreen extends StatefulWidget {
 
 class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   final OrderService _orderService = OrderService();
+  final InactivityService _inactivityService =
+      InactivityService(); // 🟢 Add this
 
   static const double _kTabletBreakpoint = 800.0;
-  static const Duration _inactivityTimeout = Duration(seconds: 120);
 
   ProductCategory? _selectedCategory;
   dynamic _selectedSubType;
@@ -38,7 +39,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   late final TextEditingController _searchController;
   List<String> _breadcrumbPath = ['Home'];
-  Timer? _inactivityTimer;
 
   void logDebug(String message) {
     debugPrint('🐞 [CATALOG] $message', wrapWidth: 1024);
@@ -57,9 +57,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     Future.microtask(() {
       if (mounted) {
-        // Use cached data - products should already be loaded from splash screen
         context.read<ProductController>().fetchProducts(forceRefresh: false);
-        _startInactivityTimer();
+        _inactivityService.start(
+          _showInactivityDialog,
+        ); // 🟢 Start global timer
       }
     });
   }
@@ -67,31 +68,15 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    _cancelInactivityTimer();
+    _inactivityService.stop(); // 🟢 Stop global timer
     super.dispose();
-  }
-
-  void _startInactivityTimer() {
-    _cancelInactivityTimer();
-    logDebug('⏱️ Timer started (${_inactivityTimeout.inSeconds}s)');
-    _inactivityTimer = Timer(_inactivityTimeout, _showInactivityDialog);
-  }
-
-  void _cancelInactivityTimer() => _inactivityTimer?.cancel();
-
-  void _resetInactivityTimer() {
-    logDebug('🔄 Reset inactivity timer');
-    _startInactivityTimer();
-  }
-
-  void _onUserInteraction() {
-    logDebug('👆 User interaction detected');
-    _resetInactivityTimer();
   }
 
   void _showInactivityDialog() {
     if (!mounted) return;
     logDebug('⚠️ Timeout reached → showing inactivity dialog');
+
+    _inactivityService.suppressTimeout(); // 🟢 Prevent multiple dialogs
 
     showDialog(
       context: context,
@@ -99,7 +84,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       barrierColor: Colors.black54,
       builder: (context) {
         return InactivityDialog(
-          onExtendSession: _resetInactivityTimer,
+          onExtendSession: () {
+            _inactivityService.enableTimeout(); // 🟢 Re-enable and reset timer
+          },
           onTimeout: _navigateToKiosk,
         );
       },
@@ -109,6 +96,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   void _navigateToKiosk() {
     if (!mounted) return;
     logDebug('🏠 Navigating back to kiosk main');
+    _inactivityService.stop(); // 🟢 Stop timer before navigation
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const KioskMain()),
@@ -247,8 +235,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   // ============================================================================
 
   void _handleProductTap(Product product) {
-    _cancelInactivityTimer();
     logDebug('🛒 Product tapped: ${product.name}');
+    // 🟢 Timer keeps running - will reset on any interaction inside modal
 
     Navigator.push(
       context,
@@ -284,7 +272,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(20),
                         ),
-                        child: ProductDetailScreen(product: product),
+                        child: InactivityDetector(
+                          // 🟢 Detects interactions in modal
+                          child: ProductDetailScreen(product: product),
+                        ),
                       ),
                     ),
                   ),
@@ -295,7 +286,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         },
         transitionsBuilder: (context, animation, _, child) => child,
       ),
-    ).then((_) => _resetInactivityTimer());
+    ); // 🟢 No .then() needed - timer runs continuously
   }
 
   // ============================================================================
@@ -385,12 +376,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     final width = MediaQuery.of(context).size.width;
     final isLargeScreen = width >= _kTabletBreakpoint;
 
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _onUserInteraction(),
-      onPointerMove: (_) => _onUserInteraction(),
+    return InactivityDetector(
       child: Scaffold(
-        backgroundColor: Colors.grey.shade400, // 🟢 Global background
+        backgroundColor: Colors.grey.shade400,
         body: isLargeScreen
             ? Row(
                 children: [

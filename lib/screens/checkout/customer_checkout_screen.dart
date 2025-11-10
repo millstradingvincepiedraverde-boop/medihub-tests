@@ -16,7 +16,6 @@ import 'package:medihub_tests/widgets/checkout/delivery_options.dart';
 import 'package:medihub_tests/widgets/checkout/order_summary.dart';
 import 'package:medihub_tests/widgets/checkout/section_title.dart';
 
-/// Shows the customer info checkout modal
 Future<void> showCustomerInfoModal(BuildContext context) {
   return showModalBottomSheet(
     context: context,
@@ -579,7 +578,7 @@ class _CustomerInfoBottomSheetState extends State<CustomerInfoBottomSheet> {
                 const SizedBox(height: 28),
 
                 // --- Billing Info ---
-                SectionTitle('Billing Details', isMobile: isMobile),
+                SectionTitle('Shipping Details', isMobile: isMobile),
                 const SizedBox(height: 16),
 
                 Row(
@@ -609,7 +608,7 @@ class _CustomerInfoBottomSheetState extends State<CustomerInfoBottomSheet> {
                   link: _layerLink,
                   child: CustomTextField(
                     controller: _controllers['address']!,
-                    label: "Billing address*",
+                    label: "Shipping address*",
                     focusNode: _addressFocusNode,
                     validator: (v) => v!.isEmpty ? "Address is required" : null,
                     onChanged: (v) => customer.address = v,

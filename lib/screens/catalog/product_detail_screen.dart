@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:medihub_tests/services/inactivity_service.dart';
 import 'package:medihub_tests/widgets/added_to_cart.dart';
 import 'package:medihub_tests/widgets/pdp/video_button.dart';
 import '../../models/product.dart';
@@ -41,223 +42,230 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget build(BuildContext context) {
     final p = widget.product;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 900;
-            final isTablet =
-                constraints.maxWidth > 600 && constraints.maxWidth <= 900;
+    return InactivityDetector(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 900;
+              final isTablet =
+                  constraints.maxWidth > 600 && constraints.maxWidth <= 900;
 
-            // 💡 Larger image, smaller text
-            double imageSize = isWide
-                ? constraints.maxWidth * 0.55
-                : isTablet
-                ? constraints.maxWidth * 0.85
-                : constraints.maxWidth * 0.95;
+              // 💡 Larger image, smaller text
+              double imageSize = isWide
+                  ? constraints.maxWidth * 0.55
+                  : isTablet
+                  ? constraints.maxWidth * 0.85
+                  : constraints.maxWidth * 0.95;
 
-            double horizontalPadding = isWide ? 120 : (isTablet ? 40 : 16);
-            double fontTitle = isWide ? 22 : (isTablet ? 18 : 14);
-            double priceFont = isWide ? 30 : (isTablet ? 24 : 18);
+              double horizontalPadding = isWide ? 120 : (isTablet ? 40 : 16);
+              double fontTitle = isWide ? 22 : (isTablet ? 18 : 14);
+              double priceFont = isWide ? 30 : (isTablet ? 24 : 18);
 
-            return Stack(
-              children: [
-                SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // === VIDEO BUTTON (Top Left)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          top: 24.0,
-                          left: 24.0,
-                          bottom: 32.0,
+              return Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // === VIDEO BUTTON (Top Left)
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: 24.0,
+                            left: 24.0,
+                            bottom: 32.0,
+                          ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: VideoButton(onPressed: () {}),
+                          ),
                         ),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: VideoButton(onPressed: () {}),
-                        ),
-                      ),
 
-                      // === MAIN IMAGE CAROUSEL ===
-                      SizedBox(
-                        height: imageSize * 0.8, // slightly taller
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            PageView.builder(
-                              onPageChanged: (index) {
-                                setState(() => _currentImage = index);
-                              },
-                              itemCount: galleryImages.length,
-                              itemBuilder: (context, index) {
-                                return AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 250),
-                                  child: Image.network(
-                                    galleryImages[index],
-                                    key: ValueKey<int>(index),
-                                    fit: BoxFit.contain,
-                                    width: double.infinity,
-                                    errorBuilder: (context, error, stack) =>
-                                        Container(
-                                          color: Colors.grey[200],
-                                          alignment: Alignment.center,
-                                          child: Icon(
-                                            Icons.image_not_supported,
-                                            color: Colors.grey.shade400,
-                                            size: 60,
+                        // === MAIN IMAGE CAROUSEL ===
+                        SizedBox(
+                          height: imageSize * 0.8, // slightly taller
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              PageView.builder(
+                                onPageChanged: (index) {
+                                  setState(() => _currentImage = index);
+                                },
+                                itemCount: galleryImages.length,
+                                itemBuilder: (context, index) {
+                                  return AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 250),
+                                    child: Image.network(
+                                      galleryImages[index],
+                                      key: ValueKey<int>(index),
+                                      fit: BoxFit.contain,
+                                      width: double.infinity,
+                                      errorBuilder: (context, error, stack) =>
+                                          Container(
+                                            color: Colors.grey[200],
+                                            alignment: Alignment.center,
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.grey.shade400,
+                                              size: 60,
+                                            ),
                                           ),
-                                        ),
-                                  ),
-                                );
-                              },
-                            ),
-                            // Left / Right Arrows (moved slightly inward)
-                            Positioned(
-                              left: 30,
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.arrow_back_ios,
-                                  size: 32,
-                                  color: Colors.black54,
-                                ),
-                                onPressed: () {
-                                  if (_currentImage > 0) {
-                                    setState(() => _currentImage--);
-                                  }
-                                },
-                              ),
-                            ),
-                            Positioned(
-                              right: 30,
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 32,
-                                  color: Colors.black54,
-                                ),
-                                onPressed: () {
-                                  if (_currentImage <
-                                      galleryImages.length - 1) {
-                                    setState(() => _currentImage++);
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // === PRODUCT NAME + PRICE (smaller) ===
-                      Container(
-                        constraints: const BoxConstraints(maxWidth: 500),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          children: [
-                            Text(
-                              p.name,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: fontTitle,
-                                fontWeight: FontWeight.normal,
-                                color: const Color(0xFF191919),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '${AppConstants.currencySymbol}${p.price.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: priceFont,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      // === QUANTITY + ADD TO CART ===
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: [
-                          _quantityControl(),
-                          _addToCartButton(p, isWide ? 24 : 18),
-                        ],
-                      ),
-                      const SizedBox(height: 48),
-
-                      // === DETAILS SECTION (DESCRIPTION + SPECS) ===
-                      Container(
-                        width: double.infinity,
-                        color: const Color(0xFF191919),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: horizontalPadding,
-                          vertical: isWide ? 60 : 40,
-                        ),
-                        child: isWide
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Flexible(
-                                    flex: 1,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 40),
-                                      child: _buildLeftColumn(p),
                                     ),
-                                  ),
-                                  Flexible(flex: 1, child: _buildRightColumn(p)),
-                                ],
-                              )
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildLeftColumn(p),
-                                  const SizedBox(height: 32),
-                                  _buildRightColumn(p),
-                                ],
+                                  );
+                                },
                               ),
-                      ),
-                    ],
-                  ),
-                ),
+                              // Left / Right Arrows (moved slightly inward)
+                              Positioned(
+                                left: 30,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.arrow_back_ios,
+                                    size: 32,
+                                    color: Colors.black54,
+                                  ),
+                                  onPressed: () {
+                                    if (_currentImage > 0) {
+                                      setState(() => _currentImage--);
+                                    }
+                                  },
+                                ),
+                              ),
+                              Positioned(
+                                right: 30,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.arrow_forward_ios,
+                                    size: 32,
+                                    color: Colors.black54,
+                                  ),
+                                  onPressed: () {
+                                    if (_currentImage <
+                                        galleryImages.length - 1) {
+                                      setState(() => _currentImage++);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
-                // Close Button
-                Positioned(
-                  top: 40,
-                  right: 40,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color.fromARGB(
-                        255,
-                        226,
-                        226,
-                        226,
-                      ), // background color of the circle
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        size: 24,
-                        color: Colors.black,
-                      ),
-                      onPressed: () => Navigator.pop(context),
+                        const SizedBox(height: 16),
+
+                        // === PRODUCT NAME + PRICE (smaller) ===
+                        Container(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              Text(
+                                p.name,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: fontTitle,
+                                  fontWeight: FontWeight.normal,
+                                  color: const Color(0xFF191919),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${AppConstants.currencySymbol}${p.price.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  fontSize: priceFont,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // === QUANTITY + ADD TO CART ===
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 16,
+                          runSpacing: 16,
+                          children: [
+                            _quantityControl(),
+                            _addToCartButton(p, isWide ? 24 : 18),
+                          ],
+                        ),
+                        const SizedBox(height: 48),
+
+                        // === DETAILS SECTION (DESCRIPTION + SPECS) ===
+                        Container(
+                          width: double.infinity,
+                          color: const Color(0xFF191919),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
+                            vertical: isWide ? 60 : 40,
+                          ),
+                          child: isWide
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Flexible(
+                                      flex: 1,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 40,
+                                        ),
+                                        child: _buildLeftColumn(p),
+                                      ),
+                                    ),
+                                    Flexible(
+                                      flex: 1,
+                                      child: _buildRightColumn(p),
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildLeftColumn(p),
+                                    const SizedBox(height: 32),
+                                    _buildRightColumn(p),
+                                  ],
+                                ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+
+                  // Close Button
+                  Positioned(
+                    top: 40,
+                    right: 40,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color.fromARGB(
+                          255,
+                          226,
+                          226,
+                          226,
+                        ), // background color of the circle
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          size: 24,
+                          color: Colors.black,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
