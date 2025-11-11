@@ -15,9 +15,7 @@ import 'package:medihub_tests/widgets/checkout/custom_text_field.dart';
 import 'package:medihub_tests/widgets/checkout/delivery_options.dart';
 import 'package:medihub_tests/widgets/checkout/order_summary.dart';
 import 'package:medihub_tests/widgets/checkout/section_title.dart';
-import 'package:medihub_tests/widgets/checkout/submit_buttons.dart';
 
-/// Shows the customer info checkout modal
 Future<void> showCustomerInfoModal(BuildContext context) {
   return showModalBottomSheet(
     context: context,
@@ -580,7 +578,7 @@ class _CustomerInfoBottomSheetState extends State<CustomerInfoBottomSheet> {
                 const SizedBox(height: 28),
 
                 // --- Billing Info ---
-                SectionTitle('Billing Details', isMobile: isMobile),
+                SectionTitle('Shipping Details', isMobile: isMobile),
                 const SizedBox(height: 16),
 
                 Row(
@@ -610,7 +608,7 @@ class _CustomerInfoBottomSheetState extends State<CustomerInfoBottomSheet> {
                   link: _layerLink,
                   child: CustomTextField(
                     controller: _controllers['address']!,
-                    label: "Billing address*",
+                    label: "Shipping address*",
                     focusNode: _addressFocusNode,
                     validator: (v) => v!.isEmpty ? "Address is required" : null,
                     onChanged: (v) => customer.address = v,
@@ -723,19 +721,19 @@ class _CustomerInfoBottomSheetState extends State<CustomerInfoBottomSheet> {
 
         // Payment icons - OUTSIDE container, positioned to the right of buttons
         Positioned(
-          right: -180,
-          bottom: 80,
+          right: -360,
+          bottom: 110,
           child: _buildPaymentIconsRow([
-            'assets/icons/visa-icon.svg',
-            'assets/icons/mastercard-icon.svg',
-            'assets/icons/amex-icon.svg',
-            'assets/icons/paypal-icon.svg',
+            'assets/icons/visa.png',
+            'assets/icons/mastercard.png',
+            'assets/icons/american-express.png',
+            'assets/icons/paypal.png',
           ]),
         ),
         Positioned(
-          right: -60,
-          bottom: 16,
-          child: _buildPaymentIconsRow(['assets/icons/ndis.svg']),
+          right: -126,
+          bottom: 40,
+          child: _buildPaymentIconsRow(['assets/icons/ndis-icon.png']),
         ),
       ],
     );
@@ -756,26 +754,30 @@ class _CustomerInfoBottomSheetState extends State<CustomerInfoBottomSheet> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: assetPaths.map((path) {
+        final isSvg = path.toLowerCase().endsWith('.svg');
+
         return Padding(
-          padding: const EdgeInsets.only(left: 4),
+          padding: const EdgeInsets.only(left: 8),
           child: Container(
-            height: 28,
-            width: 40,
-            padding: const EdgeInsets.all(4),
+            height: 40,
+            width: 70,
+
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(4),
               border: Border.all(color: Colors.grey.shade300),
             ),
-            child: SvgPicture.asset(
-              path.replaceAll('.png', '.svg'),
-              fit: BoxFit.contain,
-              placeholderBuilder: (context) => Icon(
-                Icons.credit_card,
-                size: 16,
-                color: Colors.grey.shade400,
-              ),
-            ),
+            child: isSvg
+                ? SvgPicture.asset(
+                    path,
+                    fit: BoxFit.contain,
+                    placeholderBuilder: (context) => Icon(
+                      Icons.credit_card,
+                      size: 32,
+                      color: Colors.grey.shade400,
+                    ),
+                  )
+                : Image.asset(path, fit: BoxFit.contain),
           ),
         );
       }).toList(),

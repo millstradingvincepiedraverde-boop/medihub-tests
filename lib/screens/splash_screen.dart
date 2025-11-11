@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../controllers/product_controller.dart';
 import '../services/preload_service.dart';
+import '../services/inactivity_service.dart';
 import 'kiosk-main.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -54,52 +55,57 @@ class _SplashScreenState extends State<SplashScreen>
     // Update progress periodically
     _updateProgress();
 
-    _preloadService!.preloadAll(context).then((_) {
-      if (mounted) {
-        final elapsed = DateTime.now().difference(_startTime!);
-        final remaining = _minSplashDuration - elapsed;
-
-        // Wait for minimum splash duration if preload completed too quickly
-        if (remaining.inMilliseconds > 0) {
-          setState(() {
-            _loadingMessage = 'Almost ready...';
-            _progress = 1.0;
-          });
-          Future.delayed(remaining, () {
-            if (mounted) {
-              _navigateToMain();
-            }
-          });
-        } else {
-          setState(() {
-            _loadingMessage = 'Almost ready...';
-            _progress = 1.0;
-          });
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              _navigateToMain();
-            }
-          });
-        }
-      }
-    }).catchError((error) {
-      if (mounted) {
-        // Even if preload fails, allow navigation after minimum time
-        final elapsed = DateTime.now().difference(_startTime!);
-        final remaining = _minSplashDuration - elapsed;
-
-        setState(() {
-          _loadingMessage = 'Loading...';
-        });
-
-        Future.delayed(
-            remaining.inMilliseconds > 0 ? remaining : Duration.zero, () {
+    _preloadService!
+        .preloadAll(context)
+        .then((_) {
           if (mounted) {
-            _navigateToMain();
+            final elapsed = DateTime.now().difference(_startTime!);
+            final remaining = _minSplashDuration - elapsed;
+
+            // Wait for minimum splash duration if preload completed too quickly
+            if (remaining.inMilliseconds > 0) {
+              setState(() {
+                _loadingMessage = 'Almost ready...';
+                _progress = 1.0;
+              });
+              Future.delayed(remaining, () {
+                if (mounted) {
+                  _navigateToMain();
+                }
+              });
+            } else {
+              setState(() {
+                _loadingMessage = 'Almost ready...';
+                _progress = 1.0;
+              });
+              Future.delayed(const Duration(milliseconds: 300), () {
+                if (mounted) {
+                  _navigateToMain();
+                }
+              });
+            }
+          }
+        })
+        .catchError((error) {
+          if (mounted) {
+            // Even if preload fails, allow navigation after minimum time
+            final elapsed = DateTime.now().difference(_startTime!);
+            final remaining = _minSplashDuration - elapsed;
+
+            setState(() {
+              _loadingMessage = 'Loading...';
+            });
+
+            Future.delayed(
+              remaining.inMilliseconds > 0 ? remaining : Duration.zero,
+              () {
+                if (mounted) {
+                  _navigateToMain();
+                }
+              },
+            );
           }
         });
-      }
-    });
   }
 
   /// Update progress indicator periodically
@@ -150,10 +156,7 @@ class _SplashScreenState extends State<SplashScreen>
             const KioskMain(),
         transitionDuration: const Duration(milliseconds: 500),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
       ),
     );
@@ -179,10 +182,7 @@ class _SplashScreenState extends State<SplashScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white,
-                    const Color(0xFFF8F9FA),
-                  ],
+                  colors: [Colors.white, const Color(0xFFF8F9FA)],
                 ),
               ),
             ),
@@ -203,7 +203,11 @@ class _SplashScreenState extends State<SplashScreen>
                         opacity: 0.9 + (_pulseController.value * 0.1),
                         child: SvgPicture.asset(
                           'assets/images/medihub-logo.svg',
-                          height: isMobile ? 80 : isTablet ? 120 : 150,
+                          height: isMobile
+                              ? 80
+                              : isTablet
+                              ? 120
+                              : 150,
                           fit: BoxFit.contain,
                         ),
                       ),
@@ -217,7 +221,11 @@ class _SplashScreenState extends State<SplashScreen>
                 Text(
                   _loadingMessage,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: isMobile ? 18 : isTablet ? 22 : 26,
+                    fontSize: isMobile
+                        ? 18
+                        : isTablet
+                        ? 22
+                        : 26,
                     color: const Color(0xFF191919),
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.5,
@@ -284,4 +292,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-

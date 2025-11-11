@@ -6,7 +6,8 @@ import 'package:lottie/lottie.dart';
 
 import 'package:medihub_tests/controllers/product_controller.dart';
 import 'package:medihub_tests/models/product.dart';
-import '../services/order_service.dart';
+import 'package:medihub_tests/services/order_service.dart';
+import 'package:medihub_tests/services/inactivity_service.dart'; // 🟢 Add this
 
 import 'suggestion_card.dart';
 
@@ -171,118 +172,127 @@ class _CartBottomSheetState extends State<CartBottomSheet>
     final cartItems = _orderService.cartItems;
     final total = _orderService.cartTotal;
 
-    return FractionallySizedBox(
-      heightFactor: 0.9,
-      widthFactor: 1.0,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              // Handle bar
-              Container(
-                width: 50,
-                height: 5,
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(12),
-                ),
+    // 🟢 Wrap the entire sheet with InactivityDetector
+    return InactivityDetector(
+      child: FractionallySizedBox(
+        heightFactor: 1.0,
+        widthFactor: 1.0,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 10,
+                offset: Offset(0, -2),
               ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  width: 50,
+                  height: 5,
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
 
-              _buildHeader(),
+                _buildHeader(),
 
-              // === Scrollable Body ===
-              Expanded(
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 140),
-                    child: Column(
-                      children: [
-                        if (cartItems.isEmpty)
-                          _buildEmptyCart()
-                        else
-                          Column(
-                            children: [
-                              _buildCartHeader(),
-                              ListView.separated(
-                                physics: const NeverScrollableScrollPhysics(),
-                                shrinkWrap: true,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
-                                itemCount: cartItems.length,
-                                separatorBuilder: (_, __) => const Divider(
-                                  height: 1,
-                                  color: Color(0xFFE5E5E5),
-                                ),
-                                itemBuilder: (context, index) {
-                                  final item = cartItems[index];
-                                  return TweenAnimationBuilder(
-                                    key: ValueKey(item.product.id),
-                                    tween: Tween<double>(begin: 0, end: 1),
-                                    duration: const Duration(milliseconds: 400),
-                                    builder: (context, value, child) => Opacity(
-                                      opacity: value,
-                                      child: Transform.translate(
-                                        offset: Offset(30 * (1 - value), 0),
-                                        child: child,
+                // === Scrollable Body ===
+                Expanded(
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 140),
+                      child: Column(
+                        children: [
+                          if (cartItems.isEmpty)
+                            _buildEmptyCart()
+                          else
+                            Column(
+                              children: [
+                                _buildCartHeader(),
+                                ListView.separated(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  itemCount: cartItems.length,
+                                  separatorBuilder: (_, __) => const Divider(
+                                    height: 1,
+                                    color: Color(0xFFE5E5E5),
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final item = cartItems[index];
+                                    return TweenAnimationBuilder(
+                                      key: ValueKey(item.product.id),
+                                      tween: Tween<double>(begin: 0, end: 1),
+                                      duration: const Duration(
+                                        milliseconds: 400,
                                       ),
-                                    ),
-                                    child: _buildCartItem(item),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 20),
-                              _buildSuggestions(),
-                            ],
-                          ),
-                      ],
+                                      builder: (context, value, child) =>
+                                          Opacity(
+                                            opacity: value,
+                                            child: Transform.translate(
+                                              offset: Offset(
+                                                30 * (1 - value),
+                                                0,
+                                              ),
+                                              child: child,
+                                            ),
+                                          ),
+                                      child: _buildCartItem(item),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 20),
+                                _buildSuggestions(),
+                              ],
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // === Fixed Bottom Summary & Buttons ===
-              if (cartItems.isNotEmpty)
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, -2),
-                      ),
-                    ],
+                // === Fixed Bottom Summary & Buttons ===
+                if (cartItems.isNotEmpty)
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildSummary(cartItems.length, total),
+                        const SizedBox(height: 8),
+                        _buildButtons(cartItems),
+                      ],
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildSummary(cartItems.length, total),
-                      const SizedBox(height: 8),
-                      _buildButtons(cartItems),
-                    ],
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -329,7 +339,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
 
   Widget _buildCartHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),
       color: Colors.white,
       child: const Row(
         children: [
@@ -340,7 +350,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 'Qty',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 24,
                   color: Colors.black54,
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.none,
@@ -354,7 +364,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 'Price',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 24,
                   color: Colors.black54,
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.none,
@@ -368,7 +378,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 'Total',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 24,
                   color: Colors.black54,
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.none,
@@ -388,8 +398,8 @@ class _CartBottomSheetState extends State<CartBottomSheet>
       child: Row(
         children: [
           Container(
-            width: 90,
-            height: 90,
+            width: 150,
+            height: 150,
             decoration: BoxDecoration(
               color:
                   cartItem.product.color?.withOpacity(0.1) ?? Colors.grey[100],
@@ -414,7 +424,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
             child: Text(
               cartItem.product.name,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
                 decoration: TextDecoration.none,
@@ -430,7 +440,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 '\$${cartItem.product.price.toStringAsFixed(0)}',
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.w500,
                   color: Colors.black87,
                   decoration: TextDecoration.none,
@@ -444,7 +454,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
               child: Text(
                 '\$${cartItem.totalPrice.toStringAsFixed(0)}',
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                   decoration: TextDecoration.none,
@@ -483,7 +493,7 @@ class _CartBottomSheetState extends State<CartBottomSheet>
             }
           }),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               '${cartItem.quantity}',
               style: const TextStyle(
@@ -512,9 +522,8 @@ class _CartBottomSheetState extends State<CartBottomSheet>
       height: 30,
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.grey.shade300,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.black26, width: 1),
       ),
       child: IconButton(
         padding: EdgeInsets.zero,

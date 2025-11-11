@@ -37,7 +37,7 @@ class PostageService {
     if (data['onDemand'] != null && data['onDemand'] is List) {
       for (final option in data['onDemand']) {
         rates.add(PostageRate(
-          service: option['internal_label'] ?? 'On Demand',
+          service: option['label'] ?? 'Delivered Today -',
           eta: option['label'] ?? '',
           cost: double.tryParse(option['cost']?.toString() ?? '0') ?? 0,
           code: 'ON_DEMAND',
