@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:medihub_tests/controllers/product_controller.dart';
 import 'package:medihub_tests/models/product.dart';
 import 'package:medihub_tests/constants/app_constants.dart';
+import 'package:medihub_tests/services/push_token_simple.dart';
 
-class CategorySidebar extends StatelessWidget {
+class CategorySidebar extends StatefulWidget {
   final ProductCategory? selectedCategory;
   final dynamic selectedSubType;
   final Function(ProductCategory?) onCategorySelected;
@@ -16,6 +17,83 @@ class CategorySidebar extends StatelessWidget {
     required this.selectedSubType,
     required this.onCategorySelected,
   }) : super(key: key);
+
+  @override
+  State<CategorySidebar> createState() => _CategorySidebarState();
+}
+
+class _CategorySidebarState extends State<CategorySidebar> {
+  int _tapCount = 0;
+  DateTime? _firstTapTime;
+  static const _tapWindowDuration = Duration(seconds: 2);
+  static const _requiredTaps = 5;
+
+  void _handleLogoTap() {
+    final now = DateTime.now();
+
+    // Reset if too much time has passed since first tap
+    if (_firstTapTime != null &&
+        now.difference(_firstTapTime!) > _tapWindowDuration) {
+      _tapCount = 1;
+      _firstTapTime = now;
+      return;
+    }
+
+    // Initialize first tap time
+    if (_firstTapTime == null) {
+      _firstTapTime = now;
+      _tapCount = 1;
+      return;
+    }
+
+    // Increment tap count
+    _tapCount++;
+
+    // Check if we've reached the required number of taps
+    if (_tapCount >= _requiredTaps) {
+      _showDeviceIdDialog();
+      _tapCount = 0;
+      _firstTapTime = null;
+    }
+  }
+
+  Future<void> _showDeviceIdDialog() async {
+    try {
+      final deviceId = await PushTokenSimple.instance.getDeviceId();
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Device ID'),
+            content: SelectableText(
+              deviceId,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 14,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('❌ Error getting device ID: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error getting device ID: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +110,8 @@ class CategorySidebar extends StatelessWidget {
           GestureDetector(
             onTap: () {
               debugPrint('🏠 MediHub logo tapped → returning to home screen');
-              onCategorySelected(null); // Reset category selection
+              widget.onCategorySelected(null); // Reset category selection
+              _handleLogoTap(); // Handle tap counting for device ID dialog
             },
             child: Container(
               padding: const EdgeInsets.all(32),
@@ -89,13 +168,13 @@ class CategorySidebar extends StatelessWidget {
                     label: tempProduct.categoryDisplayName,
                     imageUrl: imageUrl,
                     isSelected:
-                        selectedCategory == category && selectedSubType == null,
+                        widget.selectedCategory == category && widget.selectedSubType == null,
                     count: count,
                     onTap: () {
                       debugPrint(
                         '🖱️ Category tapped: ${tempProduct.categoryDisplayName}',
                       );
-                      onCategorySelected(category);
+                      widget.onCategorySelected(category);
                     },
                   );
                 }).toList(),

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "325769946334",
+    "project_id": "mills-brands-websites",
+    "storage_bucket": "mills-brands-websites.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:325769946334:android:ca3bbe327399de7b924e4f",
+        "android_client_info": {
+          "package_name": "com.example.medihub_tests"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvORr2jLVPFTnCd4ifcD1Jr1Qcxheu_F8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:325769946334:android:e39ab1ce4140485b924e4f",
+        "android_client_info": {
+          "package_name": "com.medihubkiosk.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvORr2jLVPFTnCd4ifcD1Jr1Qcxheu_F8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

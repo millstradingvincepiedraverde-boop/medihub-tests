@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +7,7 @@ import './screens/splash_screen.dart';
 import './controllers/product_controller.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/order_service.dart';
+import 'firebase_options.dart';
 
 void _playHapticFeedback() {
   HapticFeedback.lightImpact(); // subtle tactile response
@@ -16,7 +19,12 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
   // Set the maximum size of the image cache to 5000 images
   PaintingBinding.instance.imageCache.maximumSize = 5000;
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024; // 500 MB
+  PaintingBinding.instance.imageCache.maximumSizeBytes =
+      500 * 1024 * 1024; // 500 MB
+
+  // Firebase Setup
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseMessaging.instance.setAutoInitEnabled(false);
 
   // ✅ Create one instance of OrderService
   final orderService = OrderService();
